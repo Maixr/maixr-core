@@ -37,9 +37,9 @@ NeoForge **1.21.1** 整合包《Project Negentropy》的核心模组。
 y=110~170 的空域随机漂浮**陨石团簇**（可粉碎成 AE2 陨石粉）与**粗矿块**
 （铁/铜/金/锌/锇/铅/锡/铀/硅岩/银/钨/铝/钛/粗钢，按已装模组自动过滤）。
 
-### 4. 玩偶接入 AE2 ME 网络
+### 4. 玩偶
 
-`maixr:maixr_skin_doll` 与 `maixr:truth_doll` 可作为 AE2 网络设备接入：
+`maixr:maixr_skin_doll` 与 `maixr:truth_doll` 
 
 - 各占 **1 个频道**，接入后显示为在线设备；
 - 接入期间**每分钟产出 1 个自己**，直接写入网络存储；
