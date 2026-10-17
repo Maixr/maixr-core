@@ -31,7 +31,8 @@ public final class MaixrChunkGenerators {
         CHUNK_GENERATORS.register("broken_overworld", () -> BrokenOverworldChunkGenerator.CODEC);
         // 破碎世界（maixr:overworld_broken）专用：空岛平台 + 95% 虚空，但建筑遗迹照常生成
         CHUNK_GENERATORS.register("broken_skyblock", () -> BrokenSkyblockChunkGenerator.CODEC);
-        // 「破碎」世界类型的标记生成器：行为与原版主世界完全一致，只用来标记"玩家选了破碎"
+        // 「破碎」世界类型的标记生成器：行为与原版主世界完全一致。
+        // ★ 现行方案里类型标记由 broken_overworld 兼任，本生成器未被任何 json 引用，仅注册备用
         CHUNK_GENERATORS.register("broken_world_marker", () -> BrokenWorldMarkerGenerator.CODEC);
         CHUNK_GENERATORS.register(modBus);
     }

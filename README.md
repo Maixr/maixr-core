@@ -4,7 +4,10 @@ NeoForge **1.21.1** 整合包《Project Negentropy》的核心模组。
 
 - **modid**：`maixr`
 - **版本**：2.0.0
-- **依赖**：NeoForge 21.1.234+、Minecraft 1.21.1、**AE2 19.2+**（玩偶接网络功能）
+- **依赖**：Minecraft 1.21.1、NeoForge（mods.toml 要求 ≥21.1.0，开发环境 21.1.234）、
+  **AE2 19.2+**（必需，玩偶接网络功能）；
+  Curios（可选，缺失时佩戴自动回退原版头盔槽）、
+  SkyblockBuilder（可选，缺失时 `maixr:overworld_broken` 维度加载失败，其余功能不受影响）
 
 ---
 
@@ -37,51 +40,89 @@ NeoForge **1.21.1** 整合包《Project Negentropy》的核心模组。
 y=110~170 的空域随机漂浮**陨石团簇**（可粉碎成 AE2 陨石粉）与**粗矿块**
 （铁/铜/金/锌/锇/铅/锡/铀/硅岩/银/钨/铝/钛/粗钢，按已装模组自动过滤）。
 
-### 4. 玩偶
+### 4. 玩偶（fumo）
 
-`maixr:maixr_skin_doll` 与 `maixr:truth_doll` 
+`maixr:maixr_skin_doll` 与 `maixr:truth_doll`
 
 - 各占 **1 个频道**，接入后显示为在线设备；
 - 接入期间**每分钟产出 1 个自己**，直接写入网络存储；
 - 存储满时每 5 秒重试一次，不会丢产出；
-- 没有频道 / 网络没电时暂停计时。
+- 没有频道 / 网络没电时暂停计时；
+- 佩戴（头盔 / Curios 头饰槽；Curios 头饰槽标签仅注册了 Maixr 玩偶）时
+  Maixr 玩偶给**夜视**；
+- 真理玩偶在**头盔槽 / Curios 头饰槽 / 副手 / 主手**任一位置时，
+  死亡触发**不死图腾保护**（生命值 1 + 再生 II + 吸收 II）并消耗 1 个；
+- 可切换**旋转动画**：放置的玩偶空手右键、佩戴中空手右键空气。
 
-### 5. 其它(弧光计划·裂隙重生的残存功能)
+### 5. 创造猪咪复制配方
 
-- **破碎空岛**：出生在 (0,160,0) 的悬浮小岛，世界出生点/复活点都落在岛上。
-- **伊甸修复引擎**：从取样源世界把地形/方块搬回破碎世界。
-- **弧光 Boss**（`ArcLightBoss`）、转化桌、真理图腾等。
+合成台内 1 只创造猪咪（`ae2lt:creative_pigmee_fumo`）+ 1 件任意物品 →
+复制为一整组（64 个）。与 ae2lt 原版不同：**猪咪会被消耗**；
+凡是"NBT 里藏着猪咪"的容器物品一律拒绝复制，防套娃刷物品。
+
+---
+
+## 历史
+
+早期版本还包含伊甸工程（世界修复/提交池/纪元）、裂隙抉择、弧光 Boss、
+转化桌、故事物品、虚空凝尘等系统 —— 已整体移除，设计文档见 git 历史。
+
+早期的人造排污鸟巢 / 粉红鸟巢多方块机器（Forge 1.20.1 旧代码，原放在 `_deferred_nest/`）
+已**整体删除** —— 它们依赖已被 NeoForge 移除的 `LazyOptional` 能力体系，
+旧代码见 git 历史；如需重做须按 NeoForge 的能力注册方式整套重写。
+
+---
+
+## 项目规范（OpenSpec）
+
+本工程用 [OpenSpec](https://github.com/Fission-AI/OpenSpec) 管理规范与变更：
+
+- `openspec/config.yaml` —— 项目约定（技术栈、代码硬规则、文档规范）；
+- `openspec/specs/` —— 现有能力规范（`broken-world-type` / `doll-ae2-network` / `pigmee-duplication`），
+  改动对应行为前先改规范；
+- `openspec/changes/` —— 变更提案（`/opsx:propose` 发起，归档后进 `changes/archive/`）；
+- 校验：`openspec validate --specs --strict`。
+
+设计与排查文档在 `_docs/`：[玩偶接入AE2](\_docs/玩偶接入AE2.md)、[破碎世界](\_docs/破碎世界.md)。
 
 ---
 
 ## 构建
 
-本工程使用 **ModDevGradle 2.0.146** + JDK 21。
+本工程使用 **ModDevGradle 2.0.146** + JDK 21（本机 JDK：`C:\Users\Administrator\.jdks\ms-21.0.12`，
+已配好 `JAVA_HOME`；`build_run.cmd` 未设 `JAVA_HOME` 时自动回退到该路径）。
 
 ```bash
-# 1) 准备本地依赖
-#    - _maven/     ：本地 Maven 镜像（Gradle 插件与 NeoForge 构件）
-#    - libs/       ：第三方模组 jar（compileOnly）
-# 2) 构建
-./gradlew build
+./gradlew build          # 网络可达：自动从 gradle.org / maven.neoforged.net / mavenCentral 在线解析
+./gradlew build --offline  # 离线：需先备好 _maven/ 本地镜像（存在才启用，见 settings.gradle）
 ```
 
 产物：`build/libs/MaixrCore-1.21.1-2.0.0.jar`
 
-> 由于 `maven.neoforged.net` 在开发环境不可达，`settings.gradle` 里把
-> 本地 `_maven` 镜像排在最前。`_maven/` 与 `libs/` 已在 `.gitignore` 中排除
-> （体积大 / 第三方版权），需要自行准备。
+> `maven.neoforged.net` 在旧开发机不可达，因此 `settings.gradle` 保留了 `_maven`
+> 本地镜像优先的机制 —— **`_maven/` 目录存在时才启用**并摘掉 neoforged.net 远程仓库
+> （完全离线构建）；目录不存在时自动走官方仓库在线解析。`_maven/` 与 `libs/`
+> 均在 `.gitignore` 中排除（体积大 / 第三方版权），需自行准备。
 
-### 编译期依赖（放在 `libs/`）
+### 编译与开发运行依赖（放在 `libs/`，已配好）
 
-| jar | 用途 |
-|---|---|
-| `appliedenergistics2-19.2.18.jar` | 玩偶接入 ME 网络 |
-| `[空岛建立者] SkyblockBuilder-21.1.37.jar` | 破碎空岛生成器 |
-| `[等价交换重制版] ProjectE-1.21.1-PE1.1.0.jar` | 转化桌 |
-| `curios-neoforge-9.5.1+1.21.1.jar` | 饰品佩戴 |
-| `geckolib-neoforge-1.21.1-4.9.3.jar` | 模型动画 |
-| `jei-1.21.1-neoforge-19.57.0.449.jar` | JEI 集成 |
+| jar | 来源（Modrinth，NeoForge 1.21.1） | 用途 |
+|---|---|---|
+| `appliedenergistics2-19.2.18.jar` | ae2 | 玩偶接入 ME 网络（mods.toml 必需依赖） |
+| `guideme-21.1.19.jar` | guideme | AE2 的必需传递依赖 |
+| `curios-neoforge-9.5.1+1.21.1.jar` | curios | 玩偶佩戴（头饰槽） |
+| `[空岛建立者] SkyblockBuilder-21.1.37.jar` | skyblock-builder | 破碎空岛生成器 |
+| `LibX-1.21.1-6.0.15.jar` | libx | SkyblockBuilder 的必需传递依赖 |
+
+> 重建 `libs/` 时从 Modrinth 按上表版本号下载对应文件并重命名即可（文件名与
+> `build.gradle` 里的 `devModJars` 声明一致，SkyblockBuilder 需加 `[空岛建立者] ` 前缀）。
+
+### 开发运行（`gradlew runClient`）
+
+★ FML 在 dev 环境只从 `run/mods/` 文件夹发现模组 —— classpath 上的 jar
+**不会被当作模组**（`additionalRuntimeClasspath` 实测无效，踩过的坑）。
+`build.gradle` 里的 `syncDevMods` 任务挂在 runClient / runServer 之前，
+自动把上面 5 个 jar 同步到 `run/mods/`，直接 `./gradlew runClient` 即可。
 
 ---
 

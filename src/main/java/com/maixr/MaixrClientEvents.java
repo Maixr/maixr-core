@@ -55,7 +55,6 @@ public final class MaixrClientEvents {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(MaixrBlockEntities.SKIN_DOLL.get(), MaixrDollBlockRenderer::new);
-        event.registerBlockEntityRenderer(MaixrBlockEntities.RIFT_REVERSER_DOLL.get(), MaixrDollBlockRenderer::new);
         event.registerBlockEntityRenderer(MaixrBlockEntities.TRUTH_DOLL.get(), MaixrDollBlockRenderer::new);
     }
 

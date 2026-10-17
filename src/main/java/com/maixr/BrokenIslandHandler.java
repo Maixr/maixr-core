@@ -19,7 +19,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  * <h2>做什么</h2>
  *
  * <p>「破碎」世界类型的主世界是一个<b>渐变虚空</b>世界（见
- * {@link BrokenOverworldChunkGenerator}）：出生点附近 10% 虚空、越远越碎。
+ * {@link BrokenOverworldChunkGenerator}）：出生点附近 20% 虚空、越远越碎。
  * 本类负责在 <b>(0, 160, 0)</b> 放一座空岛，并让玩家出生、复活都落在岛上的草方块上。</p>
  *
  * <h2>★ 出生点 = 岛上的草方块</h2>
@@ -138,8 +138,9 @@ public final class BrokenIslandHandler {
                 level.getRandom(), 2 /* Block.UPDATE_CLIENTS */);
         if (!ok) return null;
 
-        MaixrMod.LOGGER.info("[破碎空岛] 已在 {} 放置 {}（尺寸 {}）",
-                ISLAND_ORIGIN, ISLAND_ID, template.getSize());
+        // 调试输出（已注释）：
+        // MaixrMod.LOGGER.info("[破碎空岛] 已在 {} 放置 {}（尺寸 {}）",
+        //         ISLAND_ORIGIN, ISLAND_ID, template.getSize());
 
         return findGrassTop(level);
     }
@@ -200,8 +201,9 @@ public final class BrokenIslandHandler {
         }
 
         if (bestGrass != null) {
-            MaixrMod.LOGGER.info("[破碎空岛] 出生草方块定位在 {}（离岛心 {:.1f} 格）",
-                    bestGrass, Math.sqrt(bestDist));
+            // 调试输出（已注释）：
+            // MaixrMod.LOGGER.info("[破碎空岛] 出生草方块定位在 {}（离岛心 {} 格）",
+            //         bestGrass, String.format("%.1f", Math.sqrt(bestDist)));
             return bestGrass.above();
         }
         if (bestAny != null) {
@@ -240,7 +242,7 @@ public final class BrokenIslandHandler {
 
         BlockPos grassTop = findGrassTop(overworld);
         overworld.setDefaultSpawnPos(grassTop, 0.0F);
-        MaixrMod.LOGGER.info("[破碎空岛] 世界出生点已设为 {}（玩家出生/无床复活都落这里）", grassTop);
+        // 调试输出（已注释）：MaixrMod.LOGGER.info("[破碎空岛] 世界出生点已设为 {}（玩家出生/无床复活都落这里）", grassTop);
     }
 
     /**
@@ -287,8 +289,9 @@ public final class BrokenIslandHandler {
         BlockPos target = findGrassTop(level);
         player.teleportTo(level, target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D,
                 player.getYRot(), player.getXRot());
-        MaixrMod.LOGGER.info("[破碎空岛] 玩家 {} 复活点不在岛上，已拉回 {}",
-                player.getGameProfile().getName(), target);
+        // 调试输出（已注释）：
+        // MaixrMod.LOGGER.info("[破碎空岛] 玩家 {} 复活点不在岛上，已拉回 {}",
+        //         player.getGameProfile().getName(), target);
     }
 
     /** 这个坐标是不是在岛的高度范围内（用来判断出生点是否已经设好）。 */

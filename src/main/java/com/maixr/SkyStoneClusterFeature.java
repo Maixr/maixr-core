@@ -49,9 +49,9 @@ import java.util.List;
  *
  * <h3>安全设计</h3>
  * <ul>
- *   <li><b>只在破碎世界与空岛世界生成</b>（见 {@link #isMeteorAllowed}）。
- *       {@code maixr:overworld_pristine} 是修复引擎的取样源 ——
- *       一旦往那里放方块，修复时会被原样搬进破碎世界，所以必须排除。</li>
+ *   <li><b>只在"脚下真的是空岛/虚空"的世界生成</b>（见 {@link #isMeteorAllowed}）：
+ *       破碎 / 空岛世界类型的主世界，以及 {@code maixr:overworld_broken} 维度。
+ *       普通主世界 y=110~170 绝大部分是空气，浮岩会显得很怪；其它维度一律不放。</li>
  *   <li>没装的模组的方块<b>自动跳过</b> —— 候选清单在首次使用时按注册表过滤一次，
  *       查不到的（比如没装 Mekanism）直接不进池子，不会放空气。</li>
  *   <li>没装 AE2 时陨石团簇自动跳过，只剩粗矿块。</li>
@@ -119,8 +119,9 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
     /** 打印实际产出统计。 */
     public static void dumpStats() {
         int m = COUNT_METEOR.get(), o = COUNT_ORE.get();
-        MaixrMod.LOGGER.info("[空域浮岩] 已生成 陨石 {} 团 / 粗矿块 {} 团（目标比例 {}/{}）",
-                m, o, Math.round(METEOR_SHARE * 100), Math.round((1 - METEOR_SHARE) * 100));
+        // 调试输出（已注释）：
+        // MaixrMod.LOGGER.info("[空域浮岩] 已生成 陨石 {} 团 / 粗矿块 {} 团（目标比例 {}/{}）",
+        //         m, o, Math.round(METEOR_SHARE * 100), Math.round((1 - METEOR_SHARE) * 100));
     }
 
     public SkyStoneClusterFeature(Codec<NoneFeatureConfiguration> codec) {
@@ -188,8 +189,9 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
         }
         if (placed) COUNT_METEOR.incrementAndGet();
         if (placed && LOGGED.getAndIncrement() < 12) {
-            MaixrMod.LOGGER.info("[空域浮岩] 陨石团簇 @ ({}, {}, {}) —— 外壳 {}（可粉碎成陨石粉）",
-                    origin.getX(), origin.getY(), origin.getZ(), SKY_STONE);
+            // 调试输出（已注释）：
+            // MaixrMod.LOGGER.info("[空域浮岩] 陨石团簇 @ ({}, {}, {}) —— 外壳 {}（可粉碎成陨石粉）",
+            //         origin.getX(), origin.getY(), origin.getZ(), SKY_STONE);
         }
         return placed;
     }
@@ -225,9 +227,10 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
         }
         if (placed) COUNT_ORE.incrementAndGet();
         if (placed && LOGGED_ORE.getAndIncrement() < 12) {
-            MaixrMod.LOGGER.info("[空域浮岩] 粗矿块 @ ({}, {}, {}) —— {}",
-                    origin.getX(), origin.getY(), origin.getZ(),
-                    BuiltInRegistries.BLOCK.getKey(ore.getBlock()));
+            // 调试输出（已注释）：
+            // MaixrMod.LOGGER.info("[空域浮岩] 粗矿块 @ ({}, {}, {}) —— {}",
+            //         origin.getX(), origin.getY(), origin.getZ(),
+            //         BuiltInRegistries.BLOCK.getKey(ore.getBlock()));
         }
         return placed;
     }
@@ -255,8 +258,9 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
                 built.add(block.defaultBlockState());
             }
             orePool = built;
-            MaixrMod.LOGGER.info("[空域浮岩] 粗矿块池：{}/{} 种可用（其余模组未装）",
-                    built.size(), RAW_ORE_IDS.length);
+            // 调试输出（已注释）：
+            // MaixrMod.LOGGER.info("[空域浮岩] 粗矿块池：{}/{} 种可用（其余模组未装）",
+            //         built.size(), RAW_ORE_IDS.length);
             return built;
         }
     }
@@ -280,9 +284,9 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
      *   <tr><th>维度</th><th>生成器</th><th>长浮岩？</th></tr>
      *   <tr><td>破碎世界</td><td>我们的破碎生成器</td><td>✅ 是</td></tr>
      *   <tr><td>主世界（空岛世界类型）</td><td>SkyblockBuilder 的空岛生成器</td><td>✅ 是（空域合理）</td></tr>
-     *   <tr><td>主世界（默认世界类型）</td><td>原版噪声</td><td>❌ 否（会有悬空石堆）</td></tr>
-     *   <tr><td>取样源 / 重生世界</td><td>原版噪声</td><td>❌ 否</td></tr>
-     * </table>
+ *   <tr><td>主世界（默认世界类型）</td><td>原版噪声</td><td>❌ 否（会有悬空石堆）</td></tr>
+ *   <tr><td>其它维度（下界 / 末地等）</td><td>各自的生成器</td><td>❌ 否</td></tr>
+ * </table>
      *
      * <p>换句话说：<b>只在"脚下真的是空岛/虚空"的世界里长浮岩</b> ——
      * 因为陨石粉本来就是为了解决空岛玩家采不到陨石的问题。</p>
@@ -300,7 +304,7 @@ public class SkyStoneClusterFeature extends Feature<NoneFeatureConfiguration> {
             //   空岛世界类型：空域合理
             return isSkyblockDimension(level);
         }
-        // 3) 其余维度（取样源 / 重生世界 / 下界 / 末地）一律不长
+        // 3) 其余维度（下界 / 末地等）一律不长
         return false;
     }
 

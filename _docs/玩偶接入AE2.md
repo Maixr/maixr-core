@@ -86,7 +86,12 @@ private boolean produceOne() {
 
 - `insert` 返回**实际插入的数量**，返回 0 即"存储满了"；
 - 满的时候不重置成 1 分钟，而是 5 秒重试，避免满了以后要等很久才恢复；
-- 没频道 / 网络没电时 `isOnline()` 为假，**计时原地暂停**。
+- 没频道 / 网络没电时 `isOnline()` 为假，**计时原地暂停**；
+- `TickingRequest` 的 `isSleeping` 传 **false**（AE2 的自动休眠默认会睡，睡了就不产出了）；
+- `onReady()` 里 `getMainNode().setVisualRepresentation(玩偶物品)` ——
+  网络状态面板里用玩偶本体当图标；
+- `Spinning` 与 `Cooldown` 随方块实体持久化（`saveAdditional` / `loadTag`），
+  重启后产出周期不丢失。
 
 ### 4. 客户端同步
 
@@ -111,6 +116,20 @@ protected boolean readFromStream(RegistryFriendlyByteBuf data) {
     return changed;
 }
 ```
+
+---
+
+## 相关文件
+
+| 文件 | 作用 |
+|---|---|
+| `MaixrDollBlockEntity.java` | 玩偶方块实体：继承 `AENetworkedBlockEntity`，占频道 + 每分钟产出 |
+| `TruthDollBlockEntity.java` | 真理玩偶方块实体：只覆写 `getProducedItem()` |
+| `MaixrAe2Integration.java` | 给两个方块实体类型显式注册 `IN_WORLD_GRID_NODE_HOST` 能力 |
+| `MaixrBlockEntities.java` | 注册 `maixr_skin_doll` / `truth_doll` 两个方块实体类型 |
+| `MaixrNetwork.java` + `client/MaixrClientPackets.java` | 真理玩偶触发不死保护时通知客户端（客户端类只收在 client 包里） |
+
+> 现行行为规范见 `openspec/specs/doll-ae2-network/spec.md`。
 
 ---
 

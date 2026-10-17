@@ -18,18 +18,11 @@ public final class MaixrBlockEntities {
             BLOCK_ENTITIES.register("truth_doll",
                     () -> BlockEntityType.Builder.of(TruthDollBlockEntity::new, MaixrMod.TRUTH_DOLL.get()).build(null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RiftReverserDollBlockEntity>> RIFT_REVERSER_DOLL =
-            BLOCK_ENTITIES.register("rift_reverser_doll",
-                    () -> BlockEntityType.Builder.of(RiftReverserDollBlockEntity::new, MaixrMod.RIFT_REVERSER_DOLL.get()).build(null));
-
-    // 【1.21.1 移植·暂缓】两个人造鸟巢端口（排污鸟巢 / 粉红鸟巢）：
-    //   它们的方块实体用了 Forge 1.20.1 的能力系统（LazyOptional + Capability + ForgeCapabilities），
-    //   而 NeoForge 已移除 LazyOptional、能力注册方式也变了，需要整套重写。
-    //   暂缓后这两台多方块机器在新版不可用，其余功能不受影响。
-    //   原代码见 _deferred_nest/EggSewerBlockEntity.java 与 PinkEggSewerBlockEntity.java。
-    //
-    // public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EggSewerBlockEntity>> EGG_SEWER = ...
-    // public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PinkEggSewerBlockEntity>> PINK_EGG_SEWER = ...
+    // 【已删除】人造排污鸟巢 / 粉红鸟巢（EggSewer / PinkEggSewer）：
+    //   旧实现基于 Forge 1.20.1 能力系统（LazyOptional + ForgeCapabilities），
+    //   NeoForge 1.21.1 已移除 LazyOptional、能力注册方式也变了。
+    //   旧代码原放在 _deferred_nest/，现已整体删除（git 历史可查）。
+    //   若将来重做这两台多方块机器，需按 NeoForge 的能力注册方式整套重写。
 
     private MaixrBlockEntities() {}
 

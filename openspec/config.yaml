@@ -1,0 +1,73 @@
+schema: spec-driven
+
+context: |
+  Language: zh
+  All artifacts must be written in zh.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  ## 项目是什么
+  Maixr Core —— Minecraft 整合包《Project Negentropy》的核心模组。
+  modid: maixr，版本 2.0.0；Java 21 + ModDevGradle 2.0.146 + NeoForge 21.1.234 + Minecraft 1.21.1。
+  构建：./gradlew build（需先备好本地 _maven/ 镜像与 libs/ 第三方 jar，见 .gitignore 与 README）。
+  产物：build/libs/MaixrCore-1.21.1-2.0.0.jar。
+
+  ## 当前能力（全部已实现；代码在 src/main/java/com/maixr/）
+  - 破碎世界类型 maixr:broken（capability: broken-world-type）：
+    渐变虚空主世界 BrokenOverworldChunkGenerator（出生点 20% 虚空 → 50 区块≈800 格处 95%，确定性哈希）；
+    地形阶段（fillFromNoise/buildSurface/applyCarvers）跳过虚空区块，结构阶段永不跳过；
+    天空结构 SkyStructurePlacer（1/100 区块、y≥201、dry-run 搬移校验、BIOMES 阶段 maskSkyReferences 屏蔽 Beardifier 地基）；
+    空域浮岩 SkyStoneClusterFeature（y=110~170、1/8 区块、35% 陨石团簇 + 65% 粗矿块，16 种候选按模组过滤）；
+    开局空岛 BrokenIslandHandler（(0,160,0) 放 maixr:broken_skyblock，spawnRadius=0，PlayerRespawnEvent 兜底拉回）。
+  - 玩偶接入 ME 网络（capability: doll-ae2-network）：
+    MaixrDollBlockEntity extends AENetworkedBlockEntity（REQUIRE_CHANNEL + IGridTickable），
+    每 1200 tick 产出 1 个自己进网络存储，满仓 100 tick 重试；TruthDollBlockEntity 只换产出物；
+    MaixrAe2Integration 显式注册 IN_WORLD_GRID_NODE_HOST 能力；
+    佩戴：Maixr 玩偶夜视；真理玩偶死亡触发不死图腾保护（头盔/Curios 头/副手/主手）并消耗 1 个。
+  - 创造猪咪复制配方（capability: pigmee-duplication）：
+    1 创造猪咪（ae2lt:creative_pigmee_fumo）+ 1 任意物品 → 复制 64 个，猪咪被消耗；
+    NBT 里藏任何猪咪 id 的容器物品拒绝复制。
+  - 人造排污/粉红鸟巢多方块机的 Forge 1.20.1 旧代码（原 _deferred_nest/）已整体删除
+    （依赖已被 NeoForge 移除的 LazyOptional；git 历史可查），如需重做须按 NeoForge 能力注册方式整套重写。
+  - 已整体移除的系统（不要再为其写规范）：伊甸工程、裂隙抉择、弧光 Boss、转化桌、故事物品、虚空凝尘、/maixr 指令。
+
+  ## 代码规范（1.21.1 移植沉淀的硬规则）
+  - 网络包必须走 RegisterPayloadHandlersEvent 注册（1.21 禁止运行期注册）；net.minecraft.client.* 类引用只允许出现在
+    com/maixr/client/ 与 @EventBusSubscriber(value = Dist.CLIENT) 中，专用服务端才能安全加载。
+  - 区块生成器注册表 Registries.CHUNK_GENERATOR 的值类型是 MapCodec<? extends ChunkGenerator>，
+    自定义生成器必须注册 MapCodec（声明成 Codec 会 ClassCastException，症状是创建世界页面卡住）。
+  - 1.21 的 Block 家族必须实现 codec()（simpleCodec 最简）；Block#use 已拆成 useItemOn / useWithoutItem。
+  - 物品 NBT 统一走 NbtCompat（DataComponents.CUSTOM_DATA）；getOrCreate 返回副本，改完必须 set 写回。
+  - Curios 等可选依赖的调用必须有 ModList.isLoaded() 守卫（见 MaixrCurios）。
+  - 注册统一在 MaixrMod 构造器里挂各 DeferredRegister 与事件监听。
+
+  ## 依赖与构建
+  - compileOnly libs/：appliedenergistics2-19.2.18.jar（必需依赖，mods.toml 里 ae2 required [19.2,)）、
+    curios-neoforge-9.5.1+1.21.1.jar（可选）、[空岛建立者] SkyblockBuilder-21.1.37.jar（可选；缺失时 maixr:overworld_broken 维度加载失败）。
+  - settings.gradle/build.gradle：本地 _maven 镜像必须排第一，并显式移除 neoforged.net 远程仓库（本机不可达）。
+
+  ## 文档规范
+  - README.md 只放功能概览与构建说明；设计与排查文档放 _docs/<主题>.md（如 破碎世界.md、玩偶接入AE2.md）。
+  - 文档中引用的常量值（虚空比例、产出间隔、概率等）必须与代码常量一致；改代码同步改文档。
+  - 文档要记录"为什么这样做"与踩过的坑，保持与现行实现一致，过时章节删除或明确标注历史。
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

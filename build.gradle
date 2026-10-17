@@ -41,10 +41,13 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    // 本地镜像必须排第一：NeoForged 的构件全部从这里取
-    maven {
-        name = "LocalMirror"
-        url = project.file("_maven")
+    // 本地镜像（若存在）必须排第一：离线开发机上 NeoForged 的构件全部从这里取。
+    // 网络可达的机器（无 _maven）直接走下面的官方仓库在线解析。
+    if (file("_maven").isDirectory()) {
+        maven {
+            name = "LocalMirror"
+            url = project.file("_maven")
+        }
     }
     flatDir { dir "libs" }
     mavenCentral()
@@ -58,22 +61,47 @@ repositories {
     }
 }
 
-// NeoGradle 会把它自己的 maven.neoforged.net 挂回来；那台机器本机连不上，
-// 网络错误会让整个依赖解析直接失败，所以显式摘掉（构件由 LocalMirror 提供）。
-repositories.removeAll {
-    it instanceof MavenArtifactRepository && it.url.toString().contains("neoforged.net")
+// 离线开发机（带 _maven 镜像）才需要摘掉 neoforged.net —— 那台机器本机连不上它，
+// 网络错误会让整个依赖解析直接失败（构件由 LocalMirror 提供）。
+// 有 _maven 时 Gradle/插件自己挂回的 neoforged.net 一并移除，保证完全离线可解析。
+if (file("_maven").isDirectory()) {
+    repositories.removeAll {
+        it instanceof MavenArtifactRepository && it.url.toString().contains("neoforged.net")
+    }
 }
 
+// 开发运行期（run/ mods 文件夹）要加载的模组 jar
+def devModJars = [
+        // AE2：两个玩偶方块要接入 ME 网络（占频道 / 往网络存储里塞物品），编译期必须可见；
+        // mods.toml 里声明为必需依赖，dev 运行不加载它就会启动即崩（"Mod maixr requires ae2"）
+        "libs/appliedenergistics2-19.2.18.jar",
+        // 饰品佩戴：MaixrCurios / TruthTotemHandler 直接调用 CuriosApi（运行期有 isLoaded() 守卫）
+        "libs/curios-neoforge-9.5.1+1.21.1.jar",
+        // 空岛生成器：继承它做「破碎空岛」生成器
+        "libs/[空岛建立者] SkyblockBuilder-21.1.37.jar",
+        // ↑ 上方模组的必需传递依赖：AE2 → guideme，SkyblockBuilder → libx
+        "libs/guideme-21.1.19.jar",
+        "libs/LibX-1.21.1-6.0.15.jar",
+]
+
 dependencies {
-    // 依赖模组（compileOnly：编译期用，运行期由整合包提供）
-    compileOnly files("libs/[等价交换重制版] ProjectE-1.21.1-PE1.1.0.jar")
-    compileOnly files("libs/jei-1.21.1-neoforge-19.57.0.449.jar")
-    compileOnly files("libs/curios-neoforge-9.5.1+1.21.1.jar")
-    compileOnly files("libs/geckolib-neoforge-1.21.1-4.9.3.jar")
-    // 空岛生成器：继承它做「破碎空岛」生成器
-    compileOnly files("libs/[空岛建立者] SkyblockBuilder-21.1.37.jar")
-    // AE2：两个玩偶方块要接入 ME 网络（占频道 / 往网络存储里塞物品），编译期必须可见
-    compileOnly files("libs/appliedenergistics2-19.2.18.jar")
+    // 编译期：正式游玩（整合包）由玩家环境提供这些模组，不进产物 jar。
+    // ★ dev 运行期（runClient/runServer）这些 jar 不会被自动发现 —— FML 只扫
+    //   run/mods/ 文件夹，classpath 上的 jar 不算模组（实测踩坑）。见下方 syncDevMods。
+    devModJars.each { compileOnly files(it) }
+}
+
+// 把 dev 运行需要的模组 jar 同步进 run/mods/。run/ 已在 .gitignore 里，
+// 新克隆 / 新机器跑一次（或直接 runClient，已挂依赖）就会自动同步。
+tasks.register('syncDevMods', Copy) {
+    group = 'build'
+    description = '把 libs/ 里的开发运行模组 jar 同步到 run/mods/（FML 只从 mods 文件夹发现模组）'
+    from(devModJars)
+    into('run/mods')
+}
+
+tasks.matching { it.name in ['runClient', 'runServer'] }.configureEach {
+    dependsOn 'syncDevMods'
 }
 
 tasks.withType(ProcessResources).configureEach {

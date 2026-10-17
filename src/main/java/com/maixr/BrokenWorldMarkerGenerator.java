@@ -9,7 +9,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 
 /**
- * 「破碎」世界类型的<b>标记生成器</b>。
+ * 「破碎」世界类型的<b>标记生成器</b>（备用，当前未被任何 json 引用）。
  *
  * <h2>它做什么</h2>
  *
@@ -18,17 +18,14 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
  *
  * <h2>那为什么需要它</h2>
  *
- * <p>它只是一个<b>可被检测的标记</b>。玩家在创建世界界面选了「破碎」之后：</p>
- * <ol>
- *   <li>世界主世界的生成器就变成这个类（而不是 {@code minecraft:noise}）</li>
- *   <li>代码里 {@link BrokenWorld#isBrokenWorldType} 检查主世界的生成器类型
- *       → {@code instanceof BrokenWorldMarkerGenerator}</li>
- *   <li>是 → 这个世界是「破碎」世界，玩家出生在 {@code maixr:overworld_broken} 维度</li>
- * </ol>
+ * <p>它只是一个<b>可被检测的标记</b>：世界类型的选择不会直接存进 level.dat，
+ * 但主世界用的是哪个生成器一定会被存下来 —— 让某个世界类型的主世界用
+ * 一个专属生成器类型，之后就能靠 {@link BrokenWorld#isBrokenWorldType}
+ * 反推玩家的选择。</p>
  *
- * <p>换句话说：<b>用"主世界生成器是什么类型"来记住"玩家选的是哪个世界类型"</b>。
- * 这是最可靠的做法 —— 世界类型的选择不会直接存进 level.dat，
- * 但主世界用的是哪个生成器一定会被存下来。</p>
+ * <p>★ 现行方案里这个角色由 {@link BrokenOverworldChunkGenerator} 兼任
+ * （「破碎」世界类型的主世界直接用它，破碎地形本身就是标记），
+ * 所以本类目前<b>没有被任何维度 json 引用</b>，仅注册保留备用。</p>
  *
  * <h2>★ 与「破碎世界」维度无关</h2>
  *
@@ -36,12 +33,12 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
  * <table border="1">
  *   <tr><th>名字</th><th>是什么</th></tr>
  *   <tr><td>{@code minecraft:overworld}（主世界）</td>
- *       <td>原版地形。<b>本类只是让它在"破碎"存档里用一个可识别的生成器类型，行为不变</b></td></tr>
- *   <tr><td>{@code maixr:overworld_broken}（破碎世界）</td>
- *       <td>真正碎掉的世界（95% 虚空 + 空岛），用 {@link BrokenSkyblockChunkGenerator}</td></tr>
+ *       <td>「破碎」世界类型下就是破碎世界本身（渐变虚空），玩家出生在
+ *           (0,160,0) 的开局空岛上（见 {@link BrokenIslandHandler}）</td></tr>
+ *   <tr><td>{@code maixr:overworld_broken}（破碎维度）</td>
+ *       <td>老式空岛 + 95% 虚空维度（{@link BrokenSkyblockChunkGenerator}），
+ *           仅兼容老存档保留，不再是出生地</td></tr>
  * </table>
- *
- * <p>玩家出生在后者（破碎世界），而不是主世界。</p>
  */
 public class BrokenWorldMarkerGenerator extends NoiseBasedChunkGenerator {
 

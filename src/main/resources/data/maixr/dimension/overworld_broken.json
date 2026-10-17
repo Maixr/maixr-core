@@ -13,8 +13,9 @@
     "     那条路只有 FlatLayers.of(String) 走，维度 json 的 codec 只认数组。",
     "   与 SkyblockBuilder 默认 surfaceSettings 一致：基岩1层、泥土2层、草方块1层",
     "",
-    "★ 主世界不受影响，仍用原版生成器。",
-    "   玩家出生在这个维度（由本模组的 MaixrBrokenSpawnHandler 传送）。"
+    "★ 主世界不受影响，仍用原版生成器（破碎世界类型下用 maixr:broken_overworld）。",
+    "   玩家不再出生在这个维度 —— 出生点在主世界 (0,160,0) 的开局空岛上",
+    "   （见 BrokenIslandHandler）。本维度仅为兼容老存档保留。"
   ],
   "type": "minecraft:overworld",
   "generator": {

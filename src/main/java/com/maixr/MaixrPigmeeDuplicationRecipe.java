@@ -96,14 +96,6 @@ public class MaixrPigmeeDuplicationRecipe extends CustomRecipe {
             return ItemStack.EMPTY;
         }
 
-        // 【机制保护 2】三张带耐久的转化桌不能被 64 倍复制 ——
-        // 否则「4 次 / 10 次 / 32 次」的消耗设定会瞬间失去意义。
-        // 改为产出 2 个「奥术转化余质」（转化桌与猪咪一同消耗）。
-        // 注：不看剩余耐久，一律给 2 个。
-        if (target.getItem() instanceof MaixrTransmutationTabletItem) {
-            return new ItemStack(MaixrMod.ARCANE_TRANSMUTATION_RESIDUE.get(), 2);
-        }
-
         return target.copyWithCount(64);
     }
 

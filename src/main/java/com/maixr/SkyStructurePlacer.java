@@ -120,7 +120,7 @@ public final class SkyStructurePlacer {
         registryAccess.registryOrThrow(Registries.STRUCTURE).forEach(pool::add);
         if (pool.isEmpty()) return false;
         if (POOL_LOGGED.compareAndSet(false, true)) {
-            MaixrMod.LOGGER.info("[破碎结构] 结构池：{} 个（全量；带地形适配的会在 BIOMES 阶段被屏蔽地基）", pool.size());
+            // 调试输出（已注释）：MaixrMod.LOGGER.info("[破碎结构] 结构池：{} 个（全量；带地形适配的会在 BIOMES 阶段被屏蔽地基）", pool.size());
         }
 
         int n = pool.size();
@@ -135,9 +135,10 @@ public final class SkyStructurePlacer {
                 structureManager.setStartForStructure(SectionPos.bottomOf(chunk),
                         structure, start, chunk);
                 if (LOGGED_OK.getAndIncrement() < 40) {
-                    MaixrMod.LOGGER.info("[破碎结构] 区块 ({}, {}) 天上生成 {} —— 底部 y={} 顶部 y={}",
-                            pos.x, pos.z, describe(structure),
-                            bottomY(start), topY(start));
+                    // 调试输出（已注释）：
+                    // MaixrMod.LOGGER.info("[破碎结构] 区块 ({}, {}) 天上生成 {} —— 底部 y={} 顶部 y={}",
+                    //         pos.x, pos.z, describe(structure),
+                    //         bottomY(start), topY(start));
                 }
                 return true;
             }
@@ -321,8 +322,9 @@ public final class SkyStructurePlacer {
                     SKIP_REASONS.merge("不可搬移:" + piece.getClass().getSimpleName(), 1, Integer::sum);
                     piece.move(0, -dy, 0);                      // 回滚
                     if (LOGGED_SKIP.getAndIncrement() < 20) {
-                        MaixrMod.LOGGER.info("[破碎结构] 放弃 {} —— {} 无法搬移（会留残骸）",
-                                describe(structure), piece.getClass().getSimpleName());
+                        // 调试输出（已注释）：
+                        // MaixrMod.LOGGER.info("[破碎结构] 放弃 {} —— {} 无法搬移（会留残骸）",
+                        //         describe(structure), piece.getClass().getSimpleName());
                     }
                     return null;
                 }
@@ -331,7 +333,7 @@ public final class SkyStructurePlacer {
         } catch (Throwable t) {
             SKIP_REASONS.merge("异常:" + t.getClass().getSimpleName(), 1, Integer::sum);
             if (LOGGED_SKIP.getAndIncrement() < 20) {
-                MaixrMod.LOGGER.info("[破碎结构] 生成 {} 失败: {}", describe(structure), t.toString());
+                // 调试输出（已注释）：MaixrMod.LOGGER.info("[破碎结构] 生成 {} 失败: {}", describe(structure), t.toString());
             }
             return null;
         }
@@ -344,14 +346,15 @@ public final class SkyStructurePlacer {
     /** 打印一次统计（给 /maixr 指令或调试用）。 */
     public static void dumpStats() {
         if (SKIP_REASONS.isEmpty()) {
-            MaixrMod.LOGGER.info("[破碎结构] 暂无放弃记录");
+            // 调试输出（已注释）：MaixrMod.LOGGER.info("[破碎结构] 暂无放弃记录");
             return;
         }
-        MaixrMod.LOGGER.info("[破碎结构] 放弃原因统计:");
-        SKIP_REASONS.entrySet().stream()
-                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
-                .limit(20)
-                .forEach(e -> MaixrMod.LOGGER.info("    {} x{}", e.getKey(), e.getValue()));
+        // 调试输出（已注释）：
+        // MaixrMod.LOGGER.info("[破碎结构] 放弃原因统计:");
+        // SKIP_REASONS.entrySet().stream()
+        //         .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+        //         .limit(20)
+        //         .forEach(e -> MaixrMod.LOGGER.info("    {} x{}", e.getKey(), e.getValue()));
     }
 
     /**

@@ -1,11 +1,15 @@
 pluginManagement {
     repositories {
-        // 本机 maven.neoforged.net 的 TLS 连接会被重置，
+        // 离线开发机：本机 maven.neoforged.net 的 TLS 连接会被重置，
         // 而 Gradle 里网络错误是致命的（不会自动跳到下一个仓库），所以本地镜像必须排第一。
-        // 镜像来源：D:\mod creater\mods\skilled craftsmaid\_maven（已验证可用于 1.21.1 构建）
-        maven {
-            name = "LocalMirror"
-            url = new File(settingsDir, "_maven").getCanonicalFile().toURI()
+        // 镜像来源：D:\mod creater\mods\skilled craftsmaid\_maven（已验证可用于 1.21.1 构建）。
+        // 网络可达的机器（无 _maven 目录）自动跳过镜像，走 gradlePluginPortal + 官方仓库。
+        def localMirror = new File(settingsDir, "_maven")
+        if (localMirror.isDirectory()) {
+            maven {
+                name = "LocalMirror"
+                url = localMirror.getCanonicalFile().toURI()
+            }
         }
         gradlePluginPortal()
         maven { url = "https://maven.neoforged.net/releases" }
