@@ -1,0 +1,32 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "cookingforblockheads:sink"
+    },
+    "title": {
+      "translate": "advancements.maixr.sink.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.sink.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cookingforblockheads:sink"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

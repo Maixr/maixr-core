@@ -1,0 +1,103 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.146'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = 'MaixrCore-1.21.1'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        "$mod_id" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // 本地镜像必须排第一：NeoForged 的构件全部从这里取
+    maven {
+        name = "LocalMirror"
+        url = project.file("_maven")
+    }
+    flatDir { dir "libs" }
+    mavenCentral()
+    maven {
+        name = "FabricMC"
+        url = "https://maven.fabricmc.net/"
+    }
+    maven {
+        name = "MinecraftLibraries"
+        url = "https://libraries.minecraft.net/"
+    }
+}
+
+// NeoGradle 会把它自己的 maven.neoforged.net 挂回来；那台机器本机连不上，
+// 网络错误会让整个依赖解析直接失败，所以显式摘掉（构件由 LocalMirror 提供）。
+repositories.removeAll {
+    it instanceof MavenArtifactRepository && it.url.toString().contains("neoforged.net")
+}
+
+dependencies {
+    // 依赖模组（compileOnly：编译期用，运行期由整合包提供）
+    compileOnly files("libs/[等价交换重制版] ProjectE-1.21.1-PE1.1.0.jar")
+    compileOnly files("libs/jei-1.21.1-neoforge-19.57.0.449.jar")
+    compileOnly files("libs/curios-neoforge-9.5.1+1.21.1.jar")
+    compileOnly files("libs/geckolib-neoforge-1.21.1-4.9.3.jar")
+    // 空岛生成器：继承它做「破碎空岛」生成器
+    compileOnly files("libs/[空岛建立者] SkyblockBuilder-21.1.37.jar")
+    // AE2：两个玩偶方块要接入 ME 网络（占频道 / 往网络存储里塞物品），编译期必须可见
+    compileOnly files("libs/appliedenergistics2-19.2.18.jar")
+}
+
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    // javac 默认最多只报 100 条错误，移植期需要看全量
+    options.compilerArgs << "-Xmaxerrs" << "2000"
+    options.compilerArgs << "-Xmaxwarns" << "200"
+}

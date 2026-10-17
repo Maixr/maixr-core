@@ -1,0 +1,27 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "mekanism:radioactive_waste_barrel"
+    },
+    "title": {
+      "translate": "advancements.maixr.qinger_yiju.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.qinger_yiju.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "mekanism:damage",
+      "conditions": {
+        "damage": "mekanism:radiation",
+        "killed": false
+      }
+    }
+  }
+}

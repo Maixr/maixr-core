@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "「破碎」世界类型。",
+    "",
+    "★ 主世界【本身就是破碎世界】：真实地形 + 渐变虚空。",
+    "   出生点附近虚空 10%（基本完好），到 250 区块（约 4000 格）升到 95%，之后恒定。",
+    "   地形是碎的，但建筑遗迹照常生成（村庄/遗迹常常悬在虚空里）。",
+    "",
+    "   生成器 maixr:broken_overworld 同时也是「玩家选的是破碎世界类型」的判据",
+    "   —— 见 BrokenWorld.isBrokenWorldType()。",
+    "",
+    "   下界/末地与普通世界完全一样。",
+    "详见 _docs/破碎世界.md"
+  ],
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "maixr:broken_overworld",
+        "biome_source": {
+          "type": "minecraft:multi_noise",
+          "preset": "minecraft:overworld"
+        },
+        "settings": "minecraft:overworld"
+      }
+    },
+    "minecraft:the_nether": {
+      "type": "minecraft:the_nether",
+      "generator": {
+        "type": "minecraft:noise",
+        "biome_source": {
+          "type": "minecraft:multi_noise",
+          "preset": "minecraft:nether"
+        },
+        "settings": "minecraft:nether"
+      }
+    },
+    "minecraft:the_end": {
+      "type": "minecraft:the_end",
+      "generator": {
+        "type": "minecraft:noise",
+        "biome_source": {
+          "type": "minecraft:the_end"
+        },
+        "settings": "minecraft:end"
+      }
+    }
+  }
+}

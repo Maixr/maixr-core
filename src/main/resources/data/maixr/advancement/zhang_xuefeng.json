@@ -1,0 +1,33 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "kubejs:chocliz"
+    },
+    "title": {
+      "translate": "advancements.maixr.zhang_xuefeng.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.zhang_xuefeng.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "kubejs:chocliz",
+              "kubejs:spirit"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

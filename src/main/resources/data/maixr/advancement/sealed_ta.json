@@ -1,0 +1,23 @@
+{
+  "parent": "maixr:group_relics",
+  "display": {
+    "icon": {
+      "item": "maixr:sealed_ta"
+    },
+    "title": {
+      "translate": "advancements.maixr.sealed_ta.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.sealed_ta.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

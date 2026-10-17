@@ -1,0 +1,28 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "minecraft:enchanted_golden_apple"
+    },
+    "title": {
+      "translate": "advancements.maixr.dagou.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.dagou.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:player_interacted_with_entity",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:wolf"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# ---- 构建产物 ----
+build/
+.gradle/
+build_out.txt
+
+# 源码备份（本地临时文件）
+*.bak_*
+*.bak2_*
+*.bak3_*
+
+# ---- 本地依赖 ----
+# 本地 Maven 镜像（约 474MB，仅本机离线构建用，绝不入库）
+_maven/
+# 第三方模组 jar（编译期 compileOnly 用；版权归各自作者，不入库）
+libs/
+
+# ---- IDE / 运行目录 ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+run/
+runs/
+out/
+src/generated/
+
+# ---- 系统 ----
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "maixr:block/maixr_skin_doll" },
+    "facing=south": { "model": "maixr:block/maixr_skin_doll", "y": 180 },
+    "facing=west": { "model": "maixr:block/maixr_skin_doll", "y": 270 },
+    "facing=east": { "model": "maixr:block/maixr_skin_doll", "y": 90 }
+  }
+}

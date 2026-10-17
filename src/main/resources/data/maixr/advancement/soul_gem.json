@@ -1,0 +1,23 @@
+{
+  "parent": "maixr:group_relics",
+  "display": {
+    "icon": {
+      "item": "maixr:soul_gem"
+    },
+    "title": {
+      "translate": "advancements.maixr.soul_gem.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.soul_gem.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

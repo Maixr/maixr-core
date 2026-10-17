@@ -1,0 +1,23 @@
+{
+  "display": {
+    "icon": {
+      "item": "maixr:core_cosmos"
+    },
+    "title": {
+      "translate": "advancements.maixr.root.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.root.description"
+    },
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "auto": {
+      "trigger": "minecraft:tick"
+    }
+  }
+}

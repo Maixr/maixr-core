@@ -1,0 +1,123 @@
+{
+  "type": "create:sequenced_assembly",
+  "ingredient": {
+    "item": "appliedcreate:stress_storage_cell_256m"
+  },
+  "loops": 1145,
+  "results": [
+    {
+      "id": "appliedcreate:creative_stress_cell"
+    }
+  ],
+  "transitional_item": {
+    "id": "appliedcreate:stress_storage_cell_256m"
+  },
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        },
+        {
+          "item": "appliedcreate:brass_stress_cell_housing"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        },
+        {
+          "item": "appliedcreate:andesite_stress_cell_housing"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        },
+        {
+          "item": "create:precision_mechanism"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        },
+        {
+          "item": "create:sturdy_sheet"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:cutting",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "appliedcreate:stress_storage_cell_256m"
+        },
+        {
+          "item": "avaritia:neutron_ingot"
+        }
+      ],
+      "results": [
+        {
+          "id": "appliedcreate:stress_storage_cell_256m"
+        }
+      ]
+    }
+  ]
+}

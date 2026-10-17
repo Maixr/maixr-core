@@ -1,0 +1,32 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "minecraft:enchanted_golden_apple"
+    },
+    "title": {
+      "translate": "advancements.maixr.daguo_gongjiang.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.daguo_gongjiang.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "minecraft:enchanted_golden_apple"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

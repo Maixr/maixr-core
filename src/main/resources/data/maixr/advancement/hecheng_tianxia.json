@@ -1,0 +1,32 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "ae2:crafting_terminal"
+    },
+    "title": {
+      "translate": "advancements.maixr.hecheng_tianxia.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.hecheng_tianxia.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "ae2:crafting_terminal"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

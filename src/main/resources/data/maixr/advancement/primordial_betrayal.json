@@ -1,0 +1,23 @@
+{
+  "parent": "maixr:group_relics",
+  "display": {
+    "icon": {
+      "item": "maixr:primordial_betrayal"
+    },
+    "title": {
+      "translate": "advancements.maixr.primordial_betrayal.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.primordial_betrayal.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "parent": "maixr:group_eden",
+  "display": {
+    "icon": {
+      "item": "maixr:soul_gem"
+    },
+    "title": {
+      "translate": "advancements.maixr.rift_self.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.rift_self.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "granted": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

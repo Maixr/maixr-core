@@ -1,0 +1,32 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "kubejs:packed_packed_packed_scaffolding"
+    },
+    "title": {
+      "translate": "advancements.maixr.taowa_3.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.taowa_3.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "kubejs:packed_packed_packed_scaffolding"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

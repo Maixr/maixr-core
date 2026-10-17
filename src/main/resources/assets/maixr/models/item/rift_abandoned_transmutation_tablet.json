@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "maixr:item/rift_abandoned_transmutation_tablet"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "maixr:core_cosmos" },
+    { "item": "maixr:core_mercy" },
+    { "item": "maixr:core_awakening" },
+    { "item": "maixr:core_wisdom" },
+    { "item": "maixr:core_rule" },
+    { "item": "maixr:core_system" },
+    { "item": "maixr:core_matter" },
+    { "item": "maixr:core_magic" },
+    { "item": "maixr:core_eternal" }
+  ],
+  "result": { "id": "maixr:world_rebirth_core" }
+}

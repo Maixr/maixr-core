@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "破碎世界（maixr:overworld_broken）—— 空岛 + 95% 虚空。",
+    "",
+    "生成器 maixr:broken_skyblock = SkyblockBuilder 的空岛平台铺层 + 95% 虚空判定。",
+    "效果：地形是碎的，但空岛平台照常铺、建筑遗迹照常生成。",
+    "",
+    "★ layers：空岛平台的方块层，必须是【数组】，每项 {\"block\": \"方块id\", \"height\": 层数}",
+    "   （height 可省略，默认 1；extras 可选）。",
+    "   平台从维度最低高度往上铺。",
+    "   这个字段不写 = 不铺任何平台 = 只剩虚空（曾经踩过这个坑）。",
+    "   ★ 不要写成 SkyblockBuilder 的字符串语法 \"1*minecraft:bedrock,...\"，",
+    "     那条路只有 FlatLayers.of(String) 走，维度 json 的 codec 只认数组。",
+    "   与 SkyblockBuilder 默认 surfaceSettings 一致：基岩1层、泥土2层、草方块1层",
+    "",
+    "★ 主世界不受影响，仍用原版生成器。",
+    "   玩家出生在这个维度（由本模组的 MaixrBrokenSpawnHandler 传送）。"
+  ],
+  "type": "minecraft:overworld",
+  "generator": {
+    "type": "maixr:broken_skyblock",
+    "biome_source": {
+      "type": "minecraft:multi_noise",
+      "preset": "minecraft:overworld"
+    },
+    "settings": "minecraft:overworld",
+    "dimension": "maixr:overworld_broken",
+    "layers": [
+      { "block": "minecraft:bedrock" },
+      { "block": "minecraft:dirt", "height": 2 },
+      { "block": "minecraft:grass_block" }
+    ]
+  }
+}

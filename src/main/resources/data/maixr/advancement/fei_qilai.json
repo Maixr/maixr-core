@@ -1,0 +1,30 @@
+{
+  "parent": "maixr:group_journey",
+  "display": {
+    "icon": {
+      "item": "minecraft:shulker_shell"
+    },
+    "title": {
+      "translate": "advancements.maixr.fei_qilai.title"
+    },
+    "description": {
+      "translate": "advancements.maixr.fei_qilai.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:levitation",
+      "conditions": {
+        "distance": {
+          "y": {
+            "min": 1
+          }
+        }
+      }
+    }
+  }
+}
