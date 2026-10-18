@@ -1,0 +1,6 @@
+{
+  "parent": "maixr:block/memory_doll_firefly",
+  "overrides": [
+    { "predicate": { "maixr:sam": 1 }, "model": "maixr:item/memory_doll_sam" }
+  ]
+}

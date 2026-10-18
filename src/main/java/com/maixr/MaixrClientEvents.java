@@ -56,6 +56,7 @@ public final class MaixrClientEvents {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(MaixrBlockEntities.SKIN_DOLL.get(), MaixrDollBlockRenderer::new);
         event.registerBlockEntityRenderer(MaixrBlockEntities.TRUTH_DOLL.get(), MaixrDollBlockRenderer::new);
+        event.registerBlockEntityRenderer(MaixrBlockEntities.MEMORY_TOMORROW_DOLL.get(), MaixrDollBlockRenderer::new);
     }
 
     /** 渲染层：玩偶坐在头顶（原版 CustomHeadLayer 锚点，佩戴旋转开关生效）。 */

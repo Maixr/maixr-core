@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,sam=false": { "model": "maixr:block/memory_doll_firefly" },
+    "facing=south,sam=false": { "model": "maixr:block/memory_doll_firefly", "y": 180 },
+    "facing=west,sam=false": { "model": "maixr:block/memory_doll_firefly", "y": 270 },
+    "facing=east,sam=false": { "model": "maixr:block/memory_doll_firefly", "y": 90 },
+    "facing=north,sam=true": { "model": "maixr:block/memory_doll_sam" },
+    "facing=south,sam=true": { "model": "maixr:block/memory_doll_sam", "y": 180 },
+    "facing=west,sam=true": { "model": "maixr:block/memory_doll_sam", "y": 270 },
+    "facing=east,sam=true": { "model": "maixr:block/memory_doll_sam", "y": 90 }
+  }
+}

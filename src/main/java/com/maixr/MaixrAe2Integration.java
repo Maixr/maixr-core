@@ -31,5 +31,11 @@ public final class MaixrAe2Integration {
                 MaixrBlockEntities.SKIN_DOLL.get(), (blockEntity, context) -> blockEntity);
         event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 MaixrBlockEntities.TRUTH_DOLL.get(), (blockEntity, context) -> blockEntity);
+        // 致回忆中的明日：继承同一套 AE2 行为，同样必须显式注册，否则线缆连不上
+        event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                MaixrBlockEntities.TRUTH_DOLL.get(), (blockEntity, context) -> blockEntity);
+        // 致回忆中的明日：继承同一套 AE2 行为，同样必须显式注册，否则线缆连不上
+        event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                MaixrBlockEntities.MEMORY_TOMORROW_DOLL.get(), (blockEntity, context) -> blockEntity);
     }
 }

@@ -1,7 +1,10 @@
 {
   "block.maixr.maixr_skin_doll": "Arc Light Maixr Plush",
   "block.maixr.truth_doll": "Truth",
+  "block.maixr.memory_tomorrow_doll": "To the Tomorrow in Memory",
   "itemGroup.maixr": "Maixr Core",
+  "key.categories.maixr": "Maixr",
+  "key.maixr.memory_transform": "To the Tomorrow in Memory · Transform",
   "generator.maixr.broken": "Broken",
   "world_preset.maixr.broken": "Broken"
 }

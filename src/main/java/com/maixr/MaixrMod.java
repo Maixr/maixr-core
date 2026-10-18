@@ -5,6 +5,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -71,9 +72,27 @@ public class MaixrMod {
     public static final DeferredHolder<Item, Item> TRUTH_DOLL_ITEM = ITEMS.register("truth_doll",
             () -> new MaixrDollItem(TRUTH_DOLL.get(), new Item.Properties()));
 
-    /** 是否任一玩偶物品（Maixr 玩偶 / 真理玩偶）。 */
+    /** 致回忆中的明日：流萤/萨姆双形态玩偶，手持右键/佩戴快捷键变身（10s 创造飞行 + 速度 II），接入 AE2。 */
+    public static final DeferredHolder<Block, Block> MEMORY_TOMORROW_DOLL = BLOCKS.register("memory_tomorrow_doll",
+            () -> new MemoryTomorrowDollBlock(BlockBehaviour.Properties.of()
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .lightLevel(state -> 8)
+                    .noOcclusion()));
+    public static final DeferredHolder<Item, Item> MEMORY_TOMORROW_DOLL_ITEM = ITEMS.register("memory_tomorrow_doll",
+            () -> new MemoryTomorrowDollItem(MEMORY_TOMORROW_DOLL.get(), new Item.Properties()));
+
+    /** 变身语音："我将点燃星海"（单声道 ogg，随距离衰减）。 */
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
+            DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, MODID);
+    public static final DeferredHolder<SoundEvent, SoundEvent> MEMORY_DOLL_TRANSFORM_SOUND =
+            SOUND_EVENTS.register("memory_doll_transform",
+                    () -> SoundEvent.createVariableRangeEvent(
+                            ResourceLocation.fromNamespaceAndPath(MODID, "memory_doll_transform")));
+
+    /** 是否任一玩偶物品（Maixr 玩偶 / 真理玩偶 / 致回忆中的明日）。 */
     public static boolean isDollItem(Item item) {
-        return item == SKIN_DOLL_ITEM.get() || item == TRUTH_DOLL_ITEM.get();
+        return item == SKIN_DOLL_ITEM.get() || item == TRUTH_DOLL_ITEM.get() || item == MEMORY_TOMORROW_DOLL_ITEM.get();
     }
 
     /** 消耗版「创造猪咪」复制配方：1 只创造猪咪 + 1 件任意物品 → 复制为一整组。 */
@@ -88,6 +107,7 @@ public class MaixrMod {
                     .displayItems((params, output) -> {
                         output.accept(SKIN_DOLL_ITEM.get());
                         output.accept(TRUTH_DOLL_ITEM.get());
+                        output.accept(MEMORY_TOMORROW_DOLL_ITEM.get());
                     })
                     .build());
 
@@ -101,7 +121,10 @@ public class MaixrMod {
         TABS.register(modBus);
         RECIPE_SERIALIZERS.register(modBus);
         FEATURES.register(modBus);
+        SOUND_EVENTS.register(modBus);
         MaixrBlockEntities.register(modBus);
+        // 致回忆中的明日：变身状态附件（跨重登持久，死亡清除）
+        MemoryDollTransforms.register(modBus);
         // AE2：两个玩偶方块实体必须显式注册「网络节点宿主」能力，否则线缆连不上
         modBus.addListener(MaixrAe2Integration::registerCapabilities);
         MaixrChunkGenerators.register(modBus);

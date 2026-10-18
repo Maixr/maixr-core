@@ -125,11 +125,22 @@ protected boolean readFromStream(RegistryFriendlyByteBuf data) {
 |---|---|
 | `MaixrDollBlockEntity.java` | 玩偶方块实体：继承 `AENetworkedBlockEntity`，占频道 + 每分钟产出 |
 | `TruthDollBlockEntity.java` | 真理玩偶方块实体：只覆写 `getProducedItem()` |
-| `MaixrAe2Integration.java` | 给两个方块实体类型显式注册 `IN_WORLD_GRID_NODE_HOST` 能力 |
-| `MaixrBlockEntities.java` | 注册 `maixr_skin_doll` / `truth_doll` 两个方块实体类型 |
+| `MemoryTomorrowDollBlockEntity.java` | 致回忆中的明日方块实体：同样只覆写 `getProducedItem()` |
+| `MaixrAe2Integration.java` | 给三个方块实体类型显式注册 `IN_WORLD_GRID_NODE_HOST` 能力 |
+| `MaixrBlockEntities.java` | 注册 `maixr_skin_doll` / `truth_doll` / `memory_tomorrow_doll` 三个方块实体类型 |
 | `MaixrNetwork.java` + `client/MaixrClientPackets.java` | 真理玩偶触发不死保护时通知客户端（客户端类只收在 client 包里） |
 
 > 现行行为规范见 `openspec/specs/doll-ae2-network/spec.md`。
+
+### 第三只玩偶：致回忆中的明日（memory_tomorrow_doll）
+
+流萤/萨姆双形态玩偶（行为规范见 `openspec/specs/memory-tomorrow-doll`，机制设计见
+`openspec/changes/add-memory-tomorrow-doll/design.md`）。对 AE2 部分**零新增逻辑**：
+
+- `MemoryTomorrowDollBlockEntity` 继承 `MaixrDollBlockEntity`，仅覆写产出物；
+- 外观状态（流萤/萨姆）放在 **BlockState 的 `sam` 属性**上而不是方块实体字段，
+  因此 AE2 流式同步通道（`writeToStream`）完全不用动；
+- `MaixrAe2Integration` 给新类型补了一行 `IN_WORLD_GRID_NODE_HOST` 注册（漏了线缆连不上，同前两只的坑）。
 
 ---
 

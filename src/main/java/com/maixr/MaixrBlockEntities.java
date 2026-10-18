@@ -18,6 +18,11 @@ public final class MaixrBlockEntities {
             BLOCK_ENTITIES.register("truth_doll",
                     () -> BlockEntityType.Builder.of(TruthDollBlockEntity::new, MaixrMod.TRUTH_DOLL.get()).build(null));
 
+    /** 致回忆中的明日：继承 Maixr 玩偶的 AE2 方块实体，产出物换成自己。 */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MemoryTomorrowDollBlockEntity>> MEMORY_TOMORROW_DOLL =
+            BLOCK_ENTITIES.register("memory_tomorrow_doll",
+                    () -> BlockEntityType.Builder.of(MemoryTomorrowDollBlockEntity::new, MaixrMod.MEMORY_TOMORROW_DOLL.get()).build(null));
+
     // 【已删除】人造排污鸟巢 / 粉红鸟巢（EggSewer / PinkEggSewer）：
     //   旧实现基于 Forge 1.20.1 能力系统（LazyOptional + ForgeCapabilities），
     //   NeoForge 1.21.1 已移除 LazyOptional、能力注册方式也变了。

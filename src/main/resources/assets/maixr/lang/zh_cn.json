@@ -1,7 +1,10 @@
 {
   "block.maixr.maixr_skin_doll": "Maixr (可爱洛天依)",
   "block.maixr.truth_doll": "真理",
+  "block.maixr.memory_tomorrow_doll": "致回忆中的明日",
   "itemGroup.maixr": "Maixr Core",
+  "key.categories.maixr": "Maixr",
+  "key.maixr.memory_transform": "致回忆中的明日 · 变身",
   "generator.maixr.broken": "破碎",
   "world_preset.maixr.broken": "破碎"
 }

@@ -54,10 +54,46 @@ public final class MaixrNetwork {
         }
     }
 
+    // ==========================================================================
+    //  致回忆中的明日：变身换肤
+    // ==========================================================================
+
+    /** 服务端 → 客户端：某玩家的萨姆变身开启/关闭（发给本人 + 追踪该玩家的所有客户端）。 */
+    public record MemoryDollSkinMsg(java.util.UUID playerId, boolean on) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<MemoryDollSkinMsg> TYPE =
+                new CustomPacketPayload.Type<>(
+                        ResourceLocation.fromNamespaceAndPath(MaixrMod.MODID, "memory_doll_skin"));
+
+        public static final StreamCodec<FriendlyByteBuf, MemoryDollSkinMsg> CODEC = StreamCodec.composite(
+                net.minecraft.core.UUIDUtil.STREAM_CODEC, MemoryDollSkinMsg::playerId,
+                net.minecraft.network.codec.ByteBufCodecs.BOOL, MemoryDollSkinMsg::on,
+                MemoryDollSkinMsg::new);
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** 客户端 → 服务端：佩戴时按下变身快捷键（服务端校验佩戴与冷却后才变身）。 */
+    public record MemoryDollHotkeyMsg() implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<MemoryDollHotkeyMsg> TYPE =
+                new CustomPacketPayload.Type<>(
+                        ResourceLocation.fromNamespaceAndPath(MaixrMod.MODID, "memory_doll_hotkey"));
+
+        public static final StreamCodec<FriendlyByteBuf, MemoryDollHotkeyMsg> CODEC =
+                StreamCodec.unit(new MemoryDollHotkeyMsg());
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     /**
      * 注册全部网络包。
      *
-     * <p>在 {@code MaixrMod} 构造函数里挂到 mod 事件总线上：
+     * <p>在 {@link MaixrMod} 构造函数里挂到 mod 事件总线上：
      * {@code modBus.addListener(MaixrNetwork::register)}</p>
      */
     public static void register(net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent event) {
@@ -65,11 +101,33 @@ public final class MaixrNetwork {
 
         registrar.playToClient(TruthTotemMsg.TYPE, TruthTotemMsg.CODEC,
                 (msg, ctx) -> ctx.enqueueWork(() -> com.maixr.client.MaixrClientPackets.truthTotem()));
+
+        registrar.playToClient(MemoryDollSkinMsg.TYPE, MemoryDollSkinMsg.CODEC,
+                (msg, ctx) -> ctx.enqueueWork(() ->
+                        com.maixr.client.MemoryDollClientPackets.handleSkin(msg.playerId(), msg.on())));
+
+        registrar.playToServer(MemoryDollHotkeyMsg.TYPE, MemoryDollHotkeyMsg.CODEC,
+                (msg, ctx) -> ctx.enqueueWork(() -> {
+                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                        MemoryDollTransforms.onHotkey(serverPlayer);
+                    }
+                }));
     }
 
     /** 通知某玩家：真理玩偶触发了不死保护 */
     public static void sendTruthTotemTo(ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, new TruthTotemMsg());
+    }
+
+    /** 广播变身换肤状态给「本人 + 追踪该玩家的所有客户端」，周围玩家能看到萨姆。 */
+    public static void sendSkinToTrackersAndSelf(ServerPlayer player, boolean on) {
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(
+                player, new MemoryDollSkinMsg(player.getUUID(), on));
+    }
+
+    /** 只发给玩家本人（重登补发用）。 */
+    public static void sendSkinToPlayer(ServerPlayer player, boolean on) {
+        PacketDistributor.sendToPlayer(player, new MemoryDollSkinMsg(player.getUUID(), on));
     }
 
     private MaixrNetwork() {}

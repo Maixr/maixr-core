@@ -2,6 +2,10 @@ modLoader = "javafml"
 loaderVersion = "${loader_version_range}"
 license = "${mod_license}"
 
+# 客户端 mixin：变身换肤拦截 PlayerInfo#getSkin（与 CustomSkinLoader 钩子点不同、互不冲突，见 design.md D4）
+[[mixins]]
+config = "maixr.mixins.json"
+
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"

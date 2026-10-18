@@ -1,0 +1,6 @@
+{
+  "sources": [
+    { "type": "single", "resource": "maixr:entity/memory_doll_firefly" },
+    { "type": "single", "resource": "maixr:entity/memory_doll_sam" }
+  ]
+}

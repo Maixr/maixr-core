@@ -1,0 +1,11 @@
+{
+  "memory_doll_transform": {
+    "category": "players",
+    "sounds": [
+      { "name": "maixr:memory_doll_transform_1", "stream": true },
+      { "name": "maixr:memory_doll_transform_2", "stream": true },
+      { "name": "maixr:memory_doll_transform_3", "stream": true },
+      { "name": "maixr:memory_doll_transform_4", "stream": true }
+    ]
+  }
+}
