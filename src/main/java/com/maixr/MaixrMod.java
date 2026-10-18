@@ -131,6 +131,8 @@ public class MaixrMod {
         MemoryDollTransforms.register(modBus);
         // AE2：两个玩偶方块实体必须显式注册「网络节点宿主」能力，否则线缆连不上
         modBus.addListener(MaixrAe2Integration::registerCapabilities);
+        // 碎片连桥：区块加载后建桥（生成阶段建桥会因跨区块读高度而崩服）
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MaixrBridgeEvents::onChunkLoad);
         MaixrChunkGenerators.register(modBus);
         // 自定义密度函数类型（破碎世界碎裂场：noise_settings JSON 引用 maixr:xxx）
         MaixrDensityFunctions.register(modBus);

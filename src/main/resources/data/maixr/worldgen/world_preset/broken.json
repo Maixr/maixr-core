@@ -35,7 +35,7 @@
           "type": "minecraft:multi_noise",
           "preset": "minecraft:nether"
         },
-        "settings": "maixr:broken_nether"
+        "settings": "minecraft:nether"
       }
     },
     "minecraft:the_end": {
@@ -45,7 +45,7 @@
         "biome_source": {
           "type": "minecraft:the_end"
         },
-        "settings": "maixr:broken_end"
+        "settings": "minecraft:end"
       }
     }
   }

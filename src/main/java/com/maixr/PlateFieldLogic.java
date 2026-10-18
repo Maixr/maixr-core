@@ -44,6 +44,9 @@ public final class PlateFieldLogic {
     private static final long SALT_CENTER_Z = 0x2545F491;
     private static final long SALT_DEATH = 0x9E3779B9;
     private static final long SALT_FINE_DEATH = 0x68BC21EB;
+    /** 碎屑子层抖动中心（与死亡判定分开，避免相关）。 */
+    private static final long SALT_FINE_CENTER_X = 0x1B873593;
+    private static final long SALT_FINE_CENTER_Z = 0xCC9E2D51;
     private static final long SALT_DRIFT_DIR = 0xC2B2AE3D;
     private static final long SALT_DRIFT_MAG = 0x27D4EB2F;
     private static final long SALT_DRIFT_DY = 0x165667B1;
@@ -63,6 +66,25 @@ public final class PlateFieldLogic {
     }
 
     /** 板块 cell 的抖动中心 x（方块坐标）。 */
+    // ==================================================================
+    //  公开只读访问器：给「碎片连桥」用（FragmentBridges）
+    // ==================================================================
+
+    /** 碎片（Voronoi cell）中心 X（方块坐标）。 */
+    public static double plateCenterX(long cellX, long cellZ) {
+        return centerX(cellX, cellZ);
+    }
+
+    /** 碎片（Voronoi cell）中心 Z（方块坐标）。 */
+    public static double plateCenterZ(long cellX, long cellZ) {
+        return centerZ(cellX, cellZ);
+    }
+
+    /** 这个碎片是否存活（有地形）。 */
+    public static boolean plateAlive(long cellX, long cellZ, double deathProb) {
+        return alive(cellX, cellZ, deathProb);
+    }
+
     private static double centerX(long cellX, long cellZ) {
         return (cellX + 0.5D + (hash01(cellX, cellZ, SALT_CENTER_X) - 0.5D) * CENTER_JITTER) * CELL_SIZE;
     }
@@ -80,6 +102,69 @@ public final class PlateFieldLogic {
     /** 碎屑子层小 cell 是否存活。 */
     private static boolean fineAlive(int fx, int fz, double fineDeathProb) {
         return fineDeathProb <= 0.0D || hash01(fx, fz, SALT_FINE_DEATH) >= fineDeathProb;
+    }
+
+    /** 碎屑 cell 的抖动中心 x（方块坐标）。 */
+    private static double fineCenterX(long fx, long fz) {
+        return (fx + 0.5D + (hash01(fx, fz, SALT_FINE_CENTER_X) - 0.5D) * CENTER_JITTER) * FINE_CELL;
+    }
+
+    /** 碎屑 cell 的抖动中心 z（方块坐标）。 */
+    private static double fineCenterZ(long fx, long fz) {
+        return (fz + 0.5D + (hash01(fx, fz, SALT_FINE_CENTER_Z) - 0.5D) * CENTER_JITTER) * FINE_CELL;
+    }
+
+    /**
+     * ★ 碎屑子层存活率 ∈ [0,1] —— <b>抖动 Voronoi</b>，不是 8×8 硬方格。
+     *
+     * <h2>为什么必须平滑（玩家实测 bug）</h2>
+     *
+     * <p>旧实现是 {@code fineAlive(cell) ? 1 : 0} —— 按 <b>8×8 格</b>整格判定，
+     * 于是出现<b>轴对齐的正方形空洞</b>（8×8 正好是 1/4 区块，玩家截图里那种
+     * “1/4 正方形空区块”）。默认带进度 2.0 下 {@code FINE_DEATH} 算得 0.10，
+     * 即约 10% 的格子被整格挖空，观感非常“人工”。</p>
+     *
+     * <p>这里改成与大板块同款做法：cell 中心哈希抖动 + 3×3 邻域取 f1/f2，
+     * 用 {@code f1/f2} 比值在“本格存活/邻格存活”之间平滑过渡 ——
+     * 边界沿抖动 Voronoi 线走，<b>不再是方格</b>，且边缘是渐变侵蚀坡而非垂直断面。</p>
+     */
+    private static double fineSurvival(double x, double z, double fineDeathProb) {
+        if (fineDeathProb <= 0.0D) {
+            return 1.0D;
+        }
+        if (fineDeathProb >= 1.0D) {
+            return 0.0D;
+        }
+        long baseX = Math.floorDiv((long) Math.floor(x), FINE_CELL);
+        long baseZ = Math.floorDiv((long) Math.floor(z), FINE_CELL);
+
+        double f1 = Double.MAX_VALUE, f2 = Double.MAX_VALUE;
+        long c1x = 0, c1z = 0, c2x = 0, c2z = 0;
+        for (long dz = -1; dz <= 1; dz++) {
+            for (long dx = -1; dx <= 1; dx++) {
+                long cx = baseX + dx, cz = baseZ + dz;
+                double ddx = x - fineCenterX(cx, cz);
+                double ddz = z - fineCenterZ(cx, cz);
+                double d = ddx * ddx + ddz * ddz;
+                if (d < f1) {
+                    f2 = f1;
+                    c2x = c1x;
+                    c2z = c1z;
+                    f1 = d;
+                    c1x = cx;
+                    c1z = cz;
+                } else if (d < f2) {
+                    f2 = d;
+                    c2x = cx;
+                    c2z = cz;
+                }
+            }
+        }
+
+        double edge = smoothstep(EDGE_SOFT_IN, EDGE_SOFT_OUT, Math.sqrt(f1) / Math.sqrt(f2));
+        double own = fineAlive((int) c1x, (int) c1z, fineDeathProb) ? 1.0D : 0.0D;
+        double other = fineAlive((int) c2x, (int) c2z, fineDeathProb) ? 1.0D : 0.0D;
+        return own + (other - own) * edge;
     }
 
     /**
@@ -125,10 +210,9 @@ public final class PlateFieldLogic {
         double ratio = Math.sqrt(f1) / Math.sqrt(f2);
         double edge = smoothstep(EDGE_SOFT_IN, EDGE_SOFT_OUT, ratio);
 
+        // ★ 碎屑子层：抖动 Voronoi 平滑（旧版 8×8 整格判定会挖出 1/4 区块的方洞）
         double fineDeath = FractureDensityFunction.curve(FractureDensityFunction.FINE_DEATH, band);
-        int fx = (int) Math.floorDiv((long) Math.floor(x), FINE_CELL);
-        int fz = (int) Math.floorDiv((long) Math.floor(z), FINE_CELL);
-        double fine = fineAlive(fx, fz, fineDeath) ? 1.0D : 0.0D;
+        double fine = fineSurvival(x, z, fineDeath);
 
         double own = alive(c1x, c1z, deathProb) ? fine : 0.0D;
         double other = alive(c2x, c2z, deathProb) ? fine : 0.0D;

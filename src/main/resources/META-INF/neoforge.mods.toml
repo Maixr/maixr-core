@@ -34,3 +34,7 @@ type = "required"
 versionRange = "[19.2,)"
 ordering = "AFTER"
 side = "BOTH"
+
+# 通用（双端）mixin：破碎世界不生成紫水晶洞
+[[mixins]]
+config = "maixr.common.mixins.json"

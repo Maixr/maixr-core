@@ -101,6 +101,10 @@ public final class MaixrDressingPass {
      * 在 {@code BrokenOverworldChunkGenerator.applyBiomeDecoration} 链尾调用。
      */
     public static void run(WorldGenLevel level, ChunkAccess chunk) {
+        // ★ 虚空残余清理：只删悬在虚空里的岩浆/紫水晶洞（本区块内，无跨区块读取）
+        VoidDebrisCleanup.run(level, chunk);
+        // 大碎片内的小湖泊（必带甘蔗）—— 碎裂场把地表水挖掉了，这里补取水点
+        SurfaceLakes.run(level, chunk);
         ServerLevel serverLevel = (ServerLevel) level.getLevel();
         FractureDensityFunction fracture = buildFracture(serverLevel);
         if (fracture == null) {
