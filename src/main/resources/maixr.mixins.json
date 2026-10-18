@@ -4,7 +4,8 @@
   "package": "com.maixr.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "PlayerInfoSkinMixin"
+    "PlayerInfoSkinMixin",
+    "WorldCreationUiStateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

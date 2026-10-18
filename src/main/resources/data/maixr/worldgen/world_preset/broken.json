@@ -2,14 +2,17 @@
   "_comment": [
     "「破碎」世界类型。",
     "",
-    "★ 主世界【本身就是破碎世界】：真实地形 + 渐变虚空。",
-    "   出生点附近虚空 20%（基本完好），到 50 区块（约 800 格）升到 95%，之后恒定。",
-    "   地形是碎的，但建筑遗迹照常生成（村庄/遗迹常常悬在虚空里）。",
+    "★ 主世界【本身就是破碎世界】：逐方块碎裂场（v2.0 重写）。",
+    "   settings 指向 maixr:broken_overworld —— final_density 外裹 maixr:fracture 碎裂掩码，",
+    "   四带静滞渐变（平静 0~1024 / 裂缝 1024~3072 / 碎块 3072~6144 / 碎屑 6144+），",
+    "   板块垂直漂移由 maixr:plate_displace 完成。地形碎了，但建筑遗迹照常完整落地",
+    "   （悬空遗迹 —— 结构放置与地形密度无关）。",
+    "",
+    "★ 下界/末地同用碎裂场：下界 maixr:broken_nether（半径 1/8 折算 + 天花板倒挂碎块），",
+    "   末地 maixr:broken_end（主岛静滞 ~768 格 + 外岛按碎块~碎屑带）。",
     "",
     "   生成器 maixr:broken_overworld 同时也是「玩家选的是破碎世界类型」的判据",
     "   —— 见 BrokenWorld.isBrokenWorldType()。",
-    "",
-    "   下界/末地与普通世界完全一样。",
     "详见 _docs/破碎世界.md"
   ],
   "dimensions": {
@@ -21,7 +24,7 @@
           "type": "minecraft:multi_noise",
           "preset": "minecraft:overworld"
         },
-        "settings": "minecraft:overworld"
+        "settings": "maixr:broken_overworld"
       }
     },
     "minecraft:the_nether": {
@@ -32,7 +35,7 @@
           "type": "minecraft:multi_noise",
           "preset": "minecraft:nether"
         },
-        "settings": "minecraft:nether"
+        "settings": "maixr:broken_nether"
       }
     },
     "minecraft:the_end": {
@@ -42,7 +45,7 @@
         "biome_source": {
           "type": "minecraft:the_end"
         },
-        "settings": "minecraft:end"
+        "settings": "maixr:broken_end"
       }
     }
   }

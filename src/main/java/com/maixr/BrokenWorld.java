@@ -14,8 +14,8 @@ import net.minecraft.world.level.Level;
  * <h2>★ 「破碎」世界类型：主世界本身就是破碎世界</h2>
  *
  * <p>选了「破碎」世界类型时，<b>主世界</b>（{@code minecraft:overworld}）直接用
- * {@link BrokenOverworldChunkGenerator} 生成 —— 真实地形 + 渐变虚空
- * （出生点 20% 虚空，50 区块≈800 格处升到 95%），主世界就是破碎世界本身。
+ * {@link BrokenOverworldChunkGenerator} 生成 —— 逐方块碎裂场
+ * （平静区 1024 格内完好，越远越碎），主世界就是破碎世界本身。
  *
  * <table border="1">
  *   <tr><th>世界类型</th><th>主世界生成器</th><th>出生</th></tr>
@@ -24,7 +24,7 @@ import net.minecraft.world.level.Level;
  *   <tr><td><b>空岛</b></td><td>SkyblockBuilder 的空岛生成器</td>
  *       <td>主世界空岛（SkyblockBuilder 自己管）</td></tr>
  *   <tr><td><b>破碎</b></td><td>{@link BrokenOverworldChunkGenerator}</td>
- *       <td>主世界里 (0,160,0) 的开局空岛（{@link BrokenIslandHandler} 放）</td></tr>
+ *       <td>平静区地表（原版出生点逻辑；开局空岛系统已移除）</td></tr>
  * </table>
  *
  * <h2>为什么要靠"生成器类型"来判定</h2>

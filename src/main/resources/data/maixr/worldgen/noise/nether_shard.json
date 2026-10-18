@@ -1,0 +1,5 @@
+{
+  "_comment": "下界天花板倒挂碎块噪声（broken_nether.json 引用）。firstOctave -3 = 波长约 8 格的块状碎渣，加一个 4 格细节倍频程。",
+  "firstOctave": -3,
+  "amplitudes": [1.0, 0.5]
+}

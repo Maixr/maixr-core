@@ -33,8 +33,8 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
  * <table border="1">
  *   <tr><th>名字</th><th>是什么</th></tr>
  *   <tr><td>{@code minecraft:overworld}（主世界）</td>
- *       <td>「破碎」世界类型下就是破碎世界本身（渐变虚空），玩家出生在
- *           (0,160,0) 的开局空岛上（见 {@link BrokenIslandHandler}）</td></tr>
+ *       <td>「破碎」世界类型下就是破碎世界本身（逐方块碎裂场），
+ *           出生/复活走原版逻辑（平静区地表，开局空岛系统已移除）</td></tr>
  *   <tr><td>{@code maixr:overworld_broken}（破碎维度）</td>
  *       <td>老式空岛 + 95% 虚空维度（{@link BrokenSkyblockChunkGenerator}），
  *           仅兼容老存档保留，不再是出生地</td></tr>

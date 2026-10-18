@@ -73,18 +73,51 @@ public class BrokenSkyblockChunkGenerator extends SkyblockNoiseBasedChunkGenerat
     /** 废墟比例：有多少区块会保留"完整地形"（其余是虚空）。 */
     public static final double GENERATED_CHANCE = 0.05;
 
-    public BrokenSkyblockChunkGenerator(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings,
-                                        ResourceKey<Level> dimension, FlatLayers layers) {
-        super(biomeSource, settings, dimension, layers);
+    // ==========================================================================
+    //  ★ 旧版区块级虚空判定（自本类起私有保留）
+    //
+    //  主世界「破碎」类型已改用逐方块碎裂场（见 FractureDensityFunction），本判定
+    //  只服务于老维度 maixr:overworld_broken（空岛 + 95% 虚空）—— 为兼容老存档
+    //  已生成区块，其行为必须与旧版逐位一致，不得改动任何常量与哈希。
+    // ==========================================================================
+
+    /** 出生点附近的虚空比例（0.20 = 20% 虚空）。 */
+    private static final double NEAR_VOID_CHANCE = 0.20D;
+
+    /** 最远处的虚空比例（0.95 = 95% 虚空，只剩 5% 残陆）。 */
+    private static final double FAR_VOID_CHANCE = 0.95D;
+
+    /** 从出生点走多远（区块）达到最碎的程度（50 区块 ≈ 800 格）。 */
+    private static final int RAMP_CHUNKS = 50;
+
+    /** 与旧 KubeJS chunkRoll 完全一致的确定性 0..1 哈希（不依赖世界种子）。 */
+    private static double roll01(int chunkX, int chunkZ) {
+        int h = chunkX * 0x1638D74F ^ chunkZ * 0x9E3779B1;
+        h = h ^ (h >>> 13);
+        h = h * 0x85EBCA6B;
+        h = h ^ (h >>> 16);
+        return (h & 0xFFFFFFFFL) / 4294967296.0;
     }
 
-    /** 与 {@link BrokenOverworldChunkGenerator} 完全一致的确定性哈希（同坐标同结果）。 */
-    public static boolean isVoided(int chunkX, int chunkZ) {
-        return BrokenOverworldChunkGenerator.isVoided(chunkX, chunkZ);
+    /** 某个区块的虚空概率 —— 出生点 {@value #NEAR_VOID_CHANCE}，到 {@value #RAMP_CHUNKS} 区块处线性升到 {@value #FAR_VOID_CHANCE}。 */
+    private static double voidChance(int chunkX, int chunkZ) {
+        int d = Math.max(Math.abs(chunkX), Math.abs(chunkZ));
+        double t = Math.min(1.0D, d / (double) RAMP_CHUNKS);
+        return NEAR_VOID_CHANCE + (FAR_VOID_CHANCE - NEAR_VOID_CHANCE) * t;
+    }
+
+    /** true = 这个区块是虚空。同一个坐标永远得到同一个结果。 */
+    private static boolean isVoided(int chunkX, int chunkZ) {
+        return roll01(chunkX, chunkZ) < voidChance(chunkX, chunkZ);
     }
 
     private static boolean isVoidedChunk(ChunkAccess chunk) {
         return isVoided(chunk.getPos().x, chunk.getPos().z);
+    }
+
+    public BrokenSkyblockChunkGenerator(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings,
+                                        ResourceKey<Level> dimension, FlatLayers layers) {
+        super(biomeSource, settings, dimension, layers);
     }
 
     // ==========================================================================

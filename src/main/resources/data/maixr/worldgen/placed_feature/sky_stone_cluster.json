@@ -5,11 +5,11 @@
     "★ 只对『破碎』与『空岛』世界类型生效（生成器类型判断，见 SkyStoneClusterFeature）。",
     "",
     "chance=8 表示每 8 个区块尝试一次（原版 rarity_filter 语义：nextFloat() < 1/chance，",
-    "  即每个区块 1/8 概率）。比原来 12 密 50% —— 因为现在 65% 是更小的粗矿块，",
+    "  即每个区块 1/8 概率）。",
     "  整体观感需要更密一点才不显空。",
     "",
-    "陨石 : 粗矿块 = 35 : 65（见 SkyStoneClusterFeature.METEOR_SHARE）。",
-    "  原来 100% 全是灰色陨石 —— 这就是玩家反馈『陨石块太多、太单调』的原因。",
+    "陨石 : 粗矿块 = 65 : 35（见 SkyStoneClusterFeature.METEOR_SHARE；用户调参减少空中矿石）。",
+    "  原来 100% 全是灰色陨石 —— 玩家反馈『陨石块太多、太单调』后加入了粗矿块。",
     "",
     "高度 110~170：这是破碎世界/空岛世界的『空域』。",
     "  注意破碎世界现在的地表在 y≈64、山最高 ~104，所以 110 以上确实是纯空中。"
@@ -18,7 +18,7 @@
   "placement": [
     {
       "type": "minecraft:rarity_filter",
-      "chance": 8
+      "chance": 16
     },
     {
       "type": "minecraft:in_square"

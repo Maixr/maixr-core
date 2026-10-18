@@ -11,7 +11,7 @@ Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.0.0）。Java 21 + M
 
 ## 关键文档
 
-- `_docs/破碎世界.md` — 破碎世界类型全部设计与踩坑（渐变虚空 / 天空结构 / 浮岩 / 开局空岛）。
+- `_docs/破碎世界.md` — 破碎世界类型全部设计与踩坑（碎裂场 / 天空结构 / 浮岩；开局空岛已移除）。
 - `_docs/玩偶接入AE2.md` — 玩偶方块实体接入 ME 网络的实现要点。
 
 ## 硬规则速查（详见 config.yaml）
@@ -34,7 +34,7 @@ Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.0.0）。Java 21 + M
 - dev 运行（runClient/runServer）从 `run/mods/` 发现模组：`syncDevMods` 任务自动把 libs/ 同步过去，
   runClient/runServer 已依赖它。FML 不认 classpath 上的 jar（additionalRuntimeClasspath 无效，实测踩坑）。
 - `ae2` 是 mods.toml 里的必需依赖，dev 环境缺它启动即崩（"Mod maixr requires ae2"）。
-- 调试 info 日志已注释（`SkyStructurePlacer` / `SkyStoneClusterFeature` / `BrokenIslandHandler`，
+- 调试 info 日志已注释（`SkyStructurePlacer` / `SkyStoneClusterFeature`，
   搜 `已注释` 可定位）；error / warn 保留。排查时取消对应注释再复现。
 - `_maven/` 离线镜像**存在才启用**（离线开发机用）；本机没有它，走在线解析，不要手工创建空目录。
 

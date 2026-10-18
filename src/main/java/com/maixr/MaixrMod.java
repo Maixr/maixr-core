@@ -26,7 +26,9 @@ import org.slf4j.Logger;
 /**
  * Maixr Core（NeoForge 1.21.1）：
  * <ul>
- *   <li>「破碎」世界类型（{@code maixr:broken}）—— 渐变虚空主世界 + 天空结构 + 空域浮岩 + 开局空岛</li>
+ *   <li>「破碎」世界类型（{@code maixr:broken}）—— 逐方块碎裂场（静滞四带渐变 +
+ *       裂缝噪声 + Voronoi 板块 + 震中）三维度应用 + 天空结构 + 空域浮岩；
+ *       出生/复活走原版逻辑（平静区地表，开局空岛系统已移除）</li>
  *   <li>玩偶（fumo）：Maixr 皮肤玩偶 / 真理玩偶，可接入 AE2 ME 网络（占频道、每分钟产出）</li>
  *   <li>创造猪咪复制配方（消耗版）</li>
  * </ul>
@@ -116,6 +118,8 @@ public class MaixrMod {
      * 不再需要 {@code FMLJavaModLoadingContext.get().getModEventBus()}。
      */
     public MaixrMod(IEventBus modBus, net.neoforged.fml.ModContainer container) {
+        // 配置：config/maixr-common.toml（玩偶音效开关 + 统一碎裂水平）
+        container.registerConfig(net.neoforged.fml.config.ModConfig.Type.COMMON, MaixrConfig.SPEC);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         TABS.register(modBus);
@@ -128,11 +132,8 @@ public class MaixrMod {
         // AE2：两个玩偶方块实体必须显式注册「网络节点宿主」能力，否则线缆连不上
         modBus.addListener(MaixrAe2Integration::registerCapabilities);
         MaixrChunkGenerators.register(modBus);
-        // 「破碎」世界类型：在主世界 (0,160,0) 放开局空岛，并把世界出生点设到岛上
-        //（出生/无床复活都落在岛上。旧版那套"把玩家传送去独立维度"已删除 —— 见 BrokenIslandHandler 类注释）
-        NeoForge.EVENT_BUS.addListener(BrokenIslandHandler::onServerStarted);
-        // 复活保障：把被原版落点修正扔下岛的玩家拉回来
-        NeoForge.EVENT_BUS.addListener(BrokenIslandHandler::onPlayerRespawn);
+        // 自定义密度函数类型（破碎世界碎裂场：noise_settings JSON 引用 maixr:xxx）
+        MaixrDensityFunctions.register(modBus);
         // 网络包注册：1.21 要求走 RegisterPayloadHandlersEvent（不能用 SimpleChannel 手动注册）
         modBus.addListener(MaixrNetwork::register);
         LOGGER.info("Maixr Core (NeoForge 1.21.1) loaded.");

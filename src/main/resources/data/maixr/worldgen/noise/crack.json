@@ -1,0 +1,5 @@
+{
+  "_comment": "碎裂场脊状裂缝噪声（maixr:fracture 的 crack_noise 引用）。firstOctave -6 = 基波长约 64 格；四个倍频程（64/32/16/8）叠加域扭曲与宽窄抖动，让裂缝线条呈纸撕毛边质感（平滑圆弧版会显得光滑无撕裂感）。阈值/扭曲常量在 FractureDensityFunction 类顶部。",
+  "firstOctave": -6,
+  "amplitudes": [1.0, 0.35, 0.30, 0.22]
+}

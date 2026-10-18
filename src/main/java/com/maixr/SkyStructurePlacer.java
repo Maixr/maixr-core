@@ -31,7 +31,9 @@ import java.util.Map;
  *
  * <ul>
  *   <li>只在<b>「破碎」世界类型</b>生效（判据 {@link BrokenWorld#isBrokenWorldType}）</li>
- *   <li>每个区块 {@value #CHANCE_DENOMINATOR} 分之一概率 —— 即<b>平均每 100 区块一座</b></li>
+ *   <li>概率<b>随四带变化</b>：平静区 0（天空干净）；裂缝带/碎块带每区块
+ *       {@value #CHANCE_DENOMINATOR} 分之一；碎屑带 {@value #DEBRIS_CHANCE_DENOMINATOR}
+ *       分之一（约两倍以上）</li>
  *   <li>结构被整体<b>抬到 y ≥ {@value #MIN_Y}</b> 的天空里，在可用高度内随机</li>
  *   <li>池子是<b>服务器上所有已注册的结构</b>（自动包含其它模组的结构，
  *       不需要硬编码清单）</li>
@@ -69,8 +71,26 @@ import java.util.Map;
  */
 public final class SkyStructurePlacer {
 
-    /** 出生概率分母：100 表示平均每 100 个区块出 1 座。 */
+    /**
+     * 出生概率分母（<b>带相关</b>，任务 6.1）：
+     * 平静区 <b>0</b>（静滞场内天空干净，直接不抽签）；
+     * 裂缝带与碎块带 {@value #CHANCE_DENOMINATOR} 分之一（平均每 100 区块一座）；
+     * 碎屑带 {@value #DEBRIS_CHANCE_DENOMINATOR} 分之一（约两倍以上密度，spec）。
+     */
     public static final int CHANCE_DENOMINATOR = 100;
+
+    /** 碎屑带（带进度 ≥ {@code 2.5}，即 r ≥ 7680）的天空结构概率分母。 */
+    public static final int DEBRIS_CHANCE_DENOMINATOR = 40;
+
+    /**
+     * ★ 写半径安全上限（区块）：与 {@code ChunkStatus.FEATURES} 阶段的写半径一致。
+     * 结构模板的方块处理（{@code RuleProcessor.processBlock}）发生在
+     * {@code placeInWorld} 的包围盒裁剪<b>之前</b>，会读取模板内<b>所有</b>方块的位置 ——
+     * piece 跨度超过写半径的超大 jigsaw 结构在远端区块读取时越界
+     * （{@code Requested chunk unavailable during world generation}，实测崩服）。
+     * 超出上限的结构整座放弃（与"不可搬移"同款防御）。
+     */
+    public static final int WRITE_RADIUS_CHUNKS = 8;
 
     /** 结构底部的最低高度 —— 用户要求 y &gt; 200。 */
     public static final int MIN_Y = 201;
@@ -108,10 +128,20 @@ public final class SkyStructurePlacer {
                                    ChunkGenerator generator, long seed) {
         ChunkPos pos = chunk.getPos();
 
+        // ★ 四带密度曲线（任务 6.1）：平静区 0（静滞场内天空干净），碎屑带更密。
+        //   带进度按区块中心到静滞锚点的距离算（纯坐标函数 → 同区块永远同结果）
+        double centerXZ = (pos.x << 4) + 8.0D;
+        double centerZ = (pos.z << 4) + 8.0D;
+        double band = FractureDensityFunction.bandProgress(centerXZ, centerZ, 1.0D);
+        if (band <= 0.0D) {
+            return false;
+        }
+        int denominator = band >= 2.5D ? DEBRIS_CHANCE_DENOMINATOR : CHANCE_DENOMINATOR;
+
         // 概率判定：坐标派生的确定性随机 —— 同一区块永远同样结果
         RandomSource rnd = RandomSource.create(
                 seed * 31L + pos.x * 341873128712L + pos.z * 132897987541L + 0x5DEECE66DL);
-        if (rnd.nextInt(CHANCE_DENOMINATOR) != 0) return false;
+        if (rnd.nextInt(denominator) != 0) return false;
 
         // 池子 = 服务器上所有已注册结构（原版 + 全部模组，自动收集，不硬编码）。
         //   ★ 带地形适配（村庄/前哨站/要塞…）的也【照收】——
@@ -299,6 +329,14 @@ public final class SkyStructurePlacer {
             //   ★ 不要用 start.getBoundingBox() —— 它会【缓存】首次计算结果，
             //     搬移 piece 之后那个缓存就过期了。这里直接按 piece 现算。
             BoundingBox bb = piecesBBox(pieces);
+
+            // ①.5 ★ 写半径校验：piece 包围盒必须完全落在注册区块 ±WRITE_RADIUS_CHUNKS 内，
+            //       否则结构模板的 processor 阶段会读生成区域外的方块（崩服，见常量注释）
+            int radius = writeRadiusExcess(bb, pos);
+            if (radius > WRITE_RADIUS_CHUNKS) {
+                SKIP_REASONS.merge("结构超出写半径(radius=" + radius + "区块)", 1, Integer::sum);
+                return null;
+            }
             int height = bb.maxY() - bb.minY();
             int maxBottom = heightAccessor.getMaxBuildHeight() - TOP_MARGIN - height;
             if (maxBottom < MIN_Y) {
@@ -337,6 +375,13 @@ public final class SkyStructurePlacer {
             }
             return null;
         }
+    }
+
+    /** piece 包围盒相对注册区块的最大区块半径。 */
+    private static int writeRadiusExcess(BoundingBox bb, ChunkPos pos) {
+        return Math.max(
+                Math.max(Math.abs((bb.minX() >> 4) - pos.x), Math.abs((bb.maxX() >> 4) - pos.x)),
+                Math.max(Math.abs((bb.minZ() >> 4) - pos.z), Math.abs((bb.maxZ() >> 4) - pos.z)));
     }
 
     /** 各类放弃原因的计数（启动一段时间后由指令/日志汇总，方便排查哪些结构不可用）。 */

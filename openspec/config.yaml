@@ -17,7 +17,7 @@ context: |
     地形阶段（fillFromNoise/buildSurface/applyCarvers）跳过虚空区块，结构阶段永不跳过；
     天空结构 SkyStructurePlacer（1/100 区块、y≥201、dry-run 搬移校验、BIOMES 阶段 maskSkyReferences 屏蔽 Beardifier 地基）；
     空域浮岩 SkyStoneClusterFeature（y=110~170、1/8 区块、35% 陨石团簇 + 65% 粗矿块，16 种候选按模组过滤）；
-    开局空岛 BrokenIslandHandler（(0,160,0) 放 maixr:broken_skyblock，spawnRadius=0，PlayerRespawnEvent 兜底拉回）。
+    出生/复活走原版逻辑（平静区地表；开局空岛系统已移除）。
   - 玩偶接入 ME 网络（capability: doll-ae2-network）：
     MaixrDollBlockEntity extends AENetworkedBlockEntity（REQUIRE_CHANNEL + IGridTickable），
     每 1200 tick 产出 1 个自己进网络存储，满仓 100 tick 重试；TruthDollBlockEntity 只换产出物；
