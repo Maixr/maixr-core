@@ -29,3 +29,6 @@ src/generated/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# 其他 agent 的构建日志
+build_out_dsh.txt

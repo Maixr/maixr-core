@@ -1,191 +1,248 @@
 package com.maixr;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+
+import java.util.Optional;
 
 /**
- * 悬浮取水小岛 —— 保证破碎世界里有水、有甘蔗。
- *
- * <h2>v3 修正（全部来自实机反馈）</h2>
+ * 碎片伴生岛 —— 世界生成阶段、单区块内一次放好（不读邻区块）。
  *
  * <table border="1">
- *   <tr><th>问题</th><th>原因</th><th>修法</th></tr>
- *   <tr><td>沙子浮空</td><td>沙环先铺、岛体后铺，环上落在岛体外的列就悬空</td>
- *       <td>先算出每列"岛体是否存在"，<b>只在该列有岛体时</b>铺沙</td></tr>
- *   <tr><td>甘蔗不在水边</td><td>沙环把池边水盖成了沙，甘蔗落在离水一格外的沙上</td>
- *       <td>甘蔗只种在<b>水平相邻列在 baseY 有水</b>且脚下是沙/土/草的列上</td></tr>
- *   <tr><td>千篇一律</td><td>正圆 + 固定参数</td>
- *       <td>半径用两路正弦扰动成有机轮廓；池心偏移、池径、岛径、装饰全部随机</td></tr>
+ *   <tr><th>概率</th><th>类型</th><th>内容</th></tr>
+ *   <tr><td>40%</td><td>甘蔗水岛</td><td>{@code maixr:skyblock_water}（玩家提供）</td></tr>
+ *   <tr><td>15%</td><td>梦晶岛</td><td>{@code maixr:skyblock_dream}（玩家提供）</td></tr>
+ *   <tr><td>12%</td><td>末地小岛</td><td>{@code maixr:skyblock_end}（玩家提供）</td></tr>
+ *   <tr><td>11%</td><td>下界小岛</td><td>{@code maixr:skyblock_nether}（玩家提供）</td></tr>
+ *   <tr><td>11%</td><td>沙漠小岛</td><td>砂岩 + 仙人掌（程序生成）</td></tr>
+ *   <tr><td>11%</td><td>水族馆</td><td><b>球形玻璃罩</b>，内部充满水 + 海带 + 多种珊瑚</td></tr>
  * </table>
- *
- * <p>整岛半径 + 2 &lt; 8，完全落在单个区块内，不跨区块写入。</p>
  */
 public final class SurfaceLakes {
 
-    public static final int CHANCE = 34;
-    public static final int MIN_Y = 62;
-    public static final int Y_SPREAD = 80;
-    private static final int MIN_RADIUS = 4;
-    private static final int MAX_RADIUS = 7;
+    /** 伴生岛的高度上限：y ≤ 100（玩家反馈高于此玩家登不上）。 */
+    private static final int MAX_SURFACE_Y = 100;
+    /** 程序生成岛（沙漠/水族馆）的半径。 */
+    private static final int R = 4;
 
     private SurfaceLakes() {
     }
 
     public static void run(WorldGenLevel level, ChunkAccess chunk) {
-        int minY = level.getMinBuildHeight();
+        ServerLevel server = level.getLevel() instanceof ServerLevel sl ? sl : null;
+        if (server == null) {
+            return;
+        }
         ChunkPos cp = chunk.getPos();
         int minX = cp.getMinBlockX();
         int minZ = cp.getMinBlockZ();
-
+        int minY = level.getMinBuildHeight();
         RandomSource rnd = RandomSource.create(
-                level.getSeed() * 31L + cp.x * 341873118712L + cp.z * 132897987541L + 0x77AC1L);
-        if (rnd.nextInt(CHANCE) != 0) {
-            return;
+                level.getSeed() * 31L + cp.x * 341873128712L + cp.z * 132897987541L + 0x5EEDL);
+
+        int variant = Math.floorMod(cp.x * 7L + cp.z * 11L, 100);
+        String nbt = null;
+        if (variant < 40) {
+            nbt = "skyblock_water";
+        } else if (variant < 55) {
+            nbt = "skyblock_dream";
+        } else if (variant < 67) {
+            nbt = "skyblock_end";
+        } else if (variant < 78) {
+            nbt = "skyblock_nether";
         }
+        int need = (nbt != null) ? 12 : R * 2 + 2;
 
-        int radius = MIN_RADIUS + rnd.nextInt(MAX_RADIUS - MIN_RADIUS + 1);
-        int margin = radius + 2;
-        if (margin * 2 >= 16) {
-            return;
-        }
-        int cx = minX + margin + rnd.nextInt(16 - margin * 2);
-        int cz = minZ + margin + rnd.nextInt(16 - margin * 2);
-        int baseY = MIN_Y + rnd.nextInt(Y_SPREAD);
-
-        // 空域检查（含边缘一圈）
-        for (int dx = -margin - 1; dx <= margin + 1; dx++) {
-            for (int dz = -margin - 1; dz <= margin + 1; dz++) {
-                if (chunk.getHeight(Heightmap.Types.WORLD_SURFACE, cx + dx, cz + dz) > minY + 1) {
-                    return;
-                }
-            }
-        }
-
-        // ★ 有机轮廓：两路正弦扰动，每个岛形状都不同
-        double phase1 = rnd.nextDouble() * Math.PI * 2.0D;
-        double phase2 = rnd.nextDouble() * Math.PI * 2.0D;
-        double amp1 = 0.8D + rnd.nextDouble() * 1.2D;
-        double amp2 = 0.4D + rnd.nextDouble() * 0.9D;
-
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        int lim = radius + 2;
-
-        // 每列的岛体半径（有机形状）
-        double[][] rmax = new double[lim * 2 + 1][lim * 2 + 1];
-        for (int dx = -lim; dx <= lim; dx++) {
-            for (int dz = -lim; dz <= lim; dz++) {
-                double theta = Math.atan2(dz, dx);
-                rmax[dx + lim][dz + lim] = radius
-                        + amp1 * Math.sin(3.0D * theta + phase1)
-                        + amp2 * Math.sin(5.0D * theta + phase2);
-            }
-        }
-        java.util.function.BiPredicate<Integer, Integer> inIsland = (dx, dz) -> {
-            if (dx < -lim || dx > lim || dz < -lim || dz > lim) {
-                return false;
-            }
-            double r = rmax[dx + lim][dz + lim];
-            return dx * dx + dz * dz <= r * r;
-        };
-
-        // 1) 岛体：草/土/石，逐层收窄
-        for (int dx = -lim; dx <= lim; dx++) {
-            for (int dz = -lim; dz <= lim; dz++) {
-                if (!inIsland.test(dx, dz)) {
-                    continue;
-                }
-                int x = cx + dx;
-                int z = cz + dz;
-                level.setBlock(p.set(x, baseY, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
-                for (int d = 1; d <= 4; d++) {
-                    if (!inIsland.test(dx, dz) || dx * dx + dz * dz > (rmax[dx + lim][dz + lim] - d) * (rmax[dx + lim][dz + lim] - d)) {
-                        break;
+        for (int oz = 1; oz + need < 16; oz++) {
+            for (int ox = 1; ox + need < 16; ox++) {
+                int originX = minX + ox;
+                int originZ = minZ + oz;
+                boolean clear = true;
+                for (int ax = -1; ax <= need && clear; ax++) {
+                    for (int az = -1; az <= need && clear; az++) {
+                        if (chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX + ax, originZ + az) > minY + 1) {
+                            clear = false;
+                        }
                     }
-                    level.setBlock(p.set(x, baseY - d, z),
-                            d <= 1 ? Blocks.DIRT.defaultBlockState() : Blocks.STONE.defaultBlockState(), 2);
                 }
-            }
-        }
-
-        // 2) 水池：池心随机偏移，只挖在岛体内部
-        int ox = rnd.nextInt(3) - 1;
-        int oz = rnd.nextInt(3) - 1;
-        int poolR = 1 + rnd.nextInt(2) + Math.max(0, (radius - 5) / 2);
-        for (int dx = -poolR - 1; dx <= poolR + 1; dx++) {
-            for (int dz = -poolR - 1; dz <= poolR + 1; dz++) {
-                int lx = dx + ox;
-                int lz = dz + oz;
-                double d = Math.sqrt(dx * dx + dz * dz);
-                if (d > poolR + 0.4D || !inIsland.test(lx, lz)) {
-                    continue;   // ★ 池边必须仍在岛体内，避免把水挖到岛外
+                if (!clear) {
+                    continue;
                 }
-                int x = cx + lx;
-                int z = cz + lz;
-                if (d > poolR - 0.4D) {
-                    // 池沿：沙（此时该列一定有岛体，不会是浮空沙）
-                    level.setBlock(p.set(x, baseY, z), Blocks.SAND.defaultBlockState(), 2);
+                int baseY = -1;
+                for (int az = 1; az < need - 1 && baseY < 0; az++) {
+                    int h = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX - 2, originZ + az);
+                    if (h > minY + 1 && h <= MAX_SURFACE_Y) {
+                        baseY = h;
+                    }
+                }
+                if (baseY < 0) {
+                    continue;
+                }
+                if (nbt != null) {
+                    placeNbt(level, server, nbt, originX, baseY, originZ, need);
+                } else if (variant < 89) {
+                    buildDesert(level, originX + need / 2, baseY, originZ + need / 2, rnd);
                 } else {
-                    level.setBlock(p.set(x, baseY, z), Blocks.WATER.defaultBlockState(), 2);
-                    level.setBlock(p.set(x, baseY - 1, z), Blocks.WATER.defaultBlockState(), 2);
-                    level.setBlock(p.set(x, baseY - 2, z), Blocks.SAND.defaultBlockState(), 2);
+                    buildAquarium(level, originX + need / 2, baseY, originZ + need / 2, rnd);
                 }
+                return;   // 每区块最多一座
             }
-        }
-
-        // 3) 甘蔗：只种在「水平相邻列 baseY 有水」且脚下是沙/土/草的列
-        for (int dx = -lim; dx <= lim; dx++) {
-            for (int dz = -lim; dz <= lim; dz++) {
-                if (!inIsland.test(dx, dz)) {
-                    continue;
-                }
-                int x = cx + dx;
-                int z = cz + dz;
-                if (!level.getBlockState(p.set(x, baseY, z)).is(Blocks.SAND)
-                        && !level.getBlockState(p.set(x, baseY, z)).is(Blocks.GRASS_BLOCK)) {
-                    continue;
-                }
-                if (!hasWaterAround(level, p, x, baseY, z)) {
-                    continue;
-                }
-                int h = 1 + rnd.nextInt(3);   // 1~3 格
-                for (int i = 0; i < h; i++) {
-                    level.setBlock(p.set(x, baseY + 1 + i, z), Blocks.SUGAR_CANE.defaultBlockState(), 2);
-                }
-            }
-        }
-
-        // 4) 点缀：草/花，增加辨识度
-        for (int i = 0; i < 6; i++) {
-            int dx = rnd.nextInt(lim * 2 + 1) - lim;
-            int dz = rnd.nextInt(lim * 2 + 1) - lim;
-            if (!inIsland.test(dx, dz)) {
-                continue;
-            }
-            int x = cx + dx;
-            int z = cz + dz;
-            if (!level.getBlockState(p.set(x, baseY, z)).is(Blocks.GRASS_BLOCK)) {
-                continue;
-            }
-            if (!level.getBlockState(p.set(x, baseY + 1, z)).isAir()) {
-                continue;
-            }
-            level.setBlock(p.set(x, baseY + 1, z),
-                    rnd.nextBoolean() ? Blocks.SHORT_GRASS.defaultBlockState() : Blocks.DANDELION.defaultBlockState(), 2);
         }
     }
 
-    /** 水平 4 邻域在<b>同一层</b>是否有水（甘蔗的硬性条件）。 */
-    private static boolean hasWaterAround(WorldGenLevel level, BlockPos.MutableBlockPos p, int x, int y, int z) {
-        for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-            if (level.getBlockState(p.set(x + d[0], y, z + d[1])).is(Blocks.WATER)) {
-                return true;
+    private static void placeNbt(WorldGenLevel level, ServerLevel server, String name,
+                                 int x, int y, int z, int need) {
+        StructureTemplateManager manager = server.getStructureManager();
+        Optional<StructureTemplate> opt = manager.get(ResourceLocation.fromNamespaceAndPath("maixr", name));
+        if (opt.isEmpty()) {
+            return;
+        }
+        StructureTemplate template = opt.get();
+        Vec3i size = template.getSize();
+        BlockPos origin = new BlockPos(x + need / 2 - size.getX() / 2, y, z + need / 2 - size.getZ() / 2);
+        template.placeInWorld(level, origin, origin, new StructurePlaceSettings(), level.getRandom(), 2);
+    }
+
+    /**
+     * 沙漠小岛：<b>加厚成沙丘</b>（原来只有 2 层，太扁），并大幅增加仙人掌。
+     *
+     * <p>结构：砂岩底盘逐层收窄 4 层 → 沙层 2 层 → 中心小丘抬高 1~2 格；
+     * 仙人掌 7~10 根、高 2~4 格，另加枯木点缀。</p>
+     */
+    private static void buildDesert(WorldGenLevel level, int cx, int y, int cz, RandomSource rnd) {
+        // 砂岩底盘（向下逐层收窄，做出厚度）
+        disc(level, cx, y, cz, R, Blocks.SANDSTONE.defaultBlockState());
+        disc(level, cx, y - 1, cz, R, Blocks.SANDSTONE.defaultBlockState());
+        disc(level, cx, y - 2, cz, R - 1, Blocks.SANDSTONE.defaultBlockState());
+        disc(level, cx, y - 3, cz, R - 2, Blocks.SANDSTONE.defaultBlockState());
+        // 沙层（顶面），中心抬高成沙丘
+        disc(level, cx, y + 1, cz, R - 1, Blocks.SAND.defaultBlockState());
+        int duneR = Math.max(1, R - 3);
+        disc(level, cx, y + 2, cz, duneR, Blocks.SAND.defaultBlockState());
+        if (rnd.nextBoolean()) {
+            disc(level, cx, y + 3, cz, Math.max(1, duneR - 1), Blocks.SAND.defaultBlockState());
+        }
+        // ★ 仙人掌加量：7~10 根，高 2~4，避开中心沙丘
+        int cactus = 7 + rnd.nextInt(4);
+        java.util.Set<Long> used = new java.util.HashSet<>();
+        for (int i = 0; i < cactus * 3 && used.size() < cactus; i++) {
+            int dx = rnd.nextInt(R * 2 + 1) - R;
+            int dz = rnd.nextInt(R * 2 + 1) - R;
+            if (dx * dx + dz * dz > R * R || dx * dx + dz * dz < 2) {
+                continue;
+            }
+            long key = ((long) dx << 32) ^ (dz & 0xFFFFFFFFL);
+            if (!used.add(key)) {
+                continue;
+            }
+            int top = y + 1;
+            // 若该列在沙丘上，仙人掌从沙丘顶起
+            while (!level.getBlockState(new BlockPos(cx + dx, top, cz + dz)).isAir()) {
+                top++;
+                if (top > y + 5) {
+                    break;
+                }
+            }
+            int h = 2 + rnd.nextInt(3);
+            for (int k = 0; k < h; k++) {
+                level.setBlock(new BlockPos(cx + dx, top + k, cz + dz),
+                        Blocks.CACTUS.defaultBlockState(), 2);
             }
         }
-        return false;
+        // 枯木点缀
+        for (int i = 0; i < 3; i++) {
+            int dx = rnd.nextInt(R * 2 + 1) - R;
+            int dz = rnd.nextInt(R * 2 + 1) - R;
+            if (dx * dx + dz * dz > R * R) {
+                continue;
+            }
+            level.setBlock(new BlockPos(cx + dx, y + 2, cz + dz),
+                    Blocks.DEAD_BUSH.defaultBlockState(), 2);
+        }
+    }
+
+    /** ★ 球形水族馆：玻璃球壳 + 内部全充满水 + 海带柱 + 4 种珊瑚。 */
+    private static void buildAquarium(WorldGenLevel level, int cx, int y, int cz, RandomSource rnd) {
+        int r = R + 1;
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (d > r + 0.15D) {
+                        continue;
+                    }
+                    BlockPos pos = new BlockPos(cx + dx, y + dy + r, cz + dz);
+                    if (d >= r - 0.7D) {
+                        level.setBlock(pos, Blocks.GLASS.defaultBlockState(), 2);   // 球壳
+                    } else {
+                        level.setBlock(pos, Blocks.WATER.defaultBlockState(), 2);   // 内部充满水
+                    }
+                }
+            }
+        }
+        // ★ 底面改为青金石块（原来铺沙，但沙在水里悬空会掉落，堆不住）
+        for (int dx = -r + 1; dx <= r - 1; dx++) {
+            for (int dz = -r + 1; dz <= r - 1; dz++) {
+                if (dx * dx + dz * dz <= (r - 1) * (r - 1)) {
+                    level.setBlock(new BlockPos(cx + dx, y + 1, cz + dz),
+                            Blocks.LAPIS_BLOCK.defaultBlockState(), 2);
+                }
+            }
+        }
+        // 海带柱（很多）
+        for (int i = 0; i < 8; i++) {
+            int dx = rnd.nextInt(2 * r - 3) - (r - 2);
+            int dz = rnd.nextInt(2 * r - 3) - (r - 2);
+            if (dx * dx + dz * dz > (r - 2) * (r - 2)) {
+                continue;
+            }
+            int h = 2 + rnd.nextInt(r);
+            for (int k = 0; k < h; k++) {
+                level.setBlock(new BlockPos(cx + dx, y + 2 + k, cz + dz),
+                        Blocks.KELP_PLANT.defaultBlockState(), 2);
+            }
+            level.setBlock(new BlockPos(cx + dx, y + 2 + h, cz + dz),
+                    Blocks.KELP.defaultBlockState(), 2);
+        }
+        // 多种珊瑚（随机分布在底部）
+        BlockState[] corals = {
+                Blocks.TUBE_CORAL_BLOCK.defaultBlockState(),
+                Blocks.BRAIN_CORAL_BLOCK.defaultBlockState(),
+                Blocks.BUBBLE_CORAL_BLOCK.defaultBlockState(),
+                Blocks.FIRE_CORAL_BLOCK.defaultBlockState(),
+                Blocks.HORN_CORAL_BLOCK.defaultBlockState(),
+                Blocks.TUBE_CORAL.defaultBlockState(),
+                Blocks.BRAIN_CORAL.defaultBlockState()
+        };
+        for (int i = 0; i < 12; i++) {
+            int dx = rnd.nextInt(2 * r - 3) - (r - 2);
+            int dz = rnd.nextInt(2 * r - 3) - (r - 2);
+            if (dx * dx + dz * dz > (r - 2) * (r - 2)) {
+                continue;
+            }
+            level.setBlock(new BlockPos(cx + dx, y + 2, cz + dz), corals[rnd.nextInt(corals.length)], 2);
+        }
+    }
+
+    private static void disc(WorldGenLevel level, int cx, int y, int cz, int r, BlockState state) {
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+                if (dx * dx + dz * dz <= r * r) {
+                    level.setBlock(new BlockPos(cx + dx, y, cz + dz), state, 2);
+                }
+            }
+        }
     }
 }

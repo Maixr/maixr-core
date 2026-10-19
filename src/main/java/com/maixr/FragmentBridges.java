@@ -5,6 +5,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -42,7 +43,9 @@ public final class FragmentBridges {
 
     private static final int SEARCH_CELLS = 2;
     private static final int DECK_HALF_WIDTH = 1;
-    private static final double ARCH = 3.0D;
+    /** ★ 拱高已取消（ARCH = 0）：正弦拱在 t→0/1 处导数 = ARCH·π ≈ 9.4，
+     *  桥头会翘得很陡，和 tan 约束冲突。改成纯直线桥面。 */
+    private static final double ARCH = 0.0D;
     private static final int MIN_SPAN = 4;
 
     /** 防爆上限（不是"长度上限"，只是避免一次铺几千格）。 */
@@ -52,6 +55,28 @@ public final class FragmentBridges {
 
     /** ★ 端点最高 Y：天空结构从 y=201 起，超过这个高度的"地表"是浮空结构，不能当桥端点。 */
     private static final int MAX_SURFACE_Y = 180;
+
+    /** ★ 端点最低 Y：两端都必须 y > 60（玩家要求）。 */
+    private static final int MIN_ENDPOINT_Y = 60;
+
+    /** ★ 桥面最大坡度 tan：|落差| / 水平跨距 必须 < 1.1（严格 / relaxed 都套）。 */
+    private static final double MAX_TAN = 1.1D;
+
+    /** 端点不合格时，沿连线往里最多再找几格。 */
+    private static final int ENDPOINT_SEARCH = 16;
+
+    /**
+     * ★ 端点必须是「只在地表出现」的方块 —— 用来排掉裸露岩层和被撕开的洞穴顶。
+     * 配合 {@link #validEndpoint} 里「上方 8 格全空气」的露天判定。
+     */
+    private static final java.util.Set<Block> SURFACE_BLOCKS = java.util.Set.of(
+            Blocks.GRASS_BLOCK,
+            Blocks.SAND,
+            Blocks.RED_SAND,
+            Blocks.DIRT,
+            Blocks.COARSE_DIRT,
+            Blocks.PODZOL,
+            Blocks.GRAVEL);
 
     /** 桥面<b>主体</b>：石砖（玩家要求：主体仍石砖）。 */
     private static final BlockState DECK = Blocks.STONE_BRICKS.defaultBlockState();
@@ -64,6 +89,15 @@ public final class FragmentBridges {
     }
 
     public static void run(ServerLevel level, LevelChunk chunk) {
+        // 诊断：每 500 次尝试打一行，定位"一座桥都没有"卡在哪条闸
+        int tries = C_TRY.get();
+        if (tries > 0 && tries % 500 == 0) {
+            MaixrMod.LOGGER.info("[连桥] 尝试 {} / 建成 {} / 端点不合格 {} / 坡度超限 {}"
+                            + " / 未加载 {} / 无地面线 {} / 中间有碎片 {} / 同碎片 {} / 跨距越界 {}",
+                    tries, C_BUILT.get(), C_NO_ENDPOINT.get(), C_TAN.get(),
+                    C_UNLOADED.get(), C_NO_LINE.get(), C_MID_FRAG.get(),
+                    C_SAME_FRAG.get(), C_SPAN.get());
+        }
         double band = MaixrConfig.uniformBand();
         double deathProb = FractureDensityFunction.curve(FractureDensityFunction.PLATE_DEATH, band);
         if (deathProb <= 0.0D || deathProb >= 1.0D) {
@@ -142,6 +176,26 @@ public final class FragmentBridges {
         return resolved;
     }
 
+    /** 诊断计数：分别记录各条拒绝原因，定位"一座桥都没有"到底卡在哪。 */
+    public static final java.util.concurrent.atomic.AtomicInteger C_TRY =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_NO_ENDPOINT =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_TAN =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_BUILT =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_UNLOADED =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_MID_FRAG =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_SAME_FRAG =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_SPAN =
+            new java.util.concurrent.atomic.AtomicInteger();
+    public static final java.util.concurrent.atomic.AtomicInteger C_NO_LINE =
+            new java.util.concurrent.atomic.AtomicInteger();
+
     private static final int NO_BRIDGE = 0;
     private static final int BUILT = 1;
     private static final int UNLOADED = -1;
@@ -190,6 +244,7 @@ public final class FragmentBridges {
         if (len < 1.0D || len > HARD_MAX_SPAN * 1.5D) {
             return NO_BRIDGE;
         }
+        C_TRY.incrementAndGet();
         int steps = (int) Math.ceil(len);
         boolean[] solid = new boolean[steps + 1];
         int[] hgt = new int[steps + 1];
@@ -201,6 +256,7 @@ public final class FragmentBridges {
             int z = (int) Math.floor(z0 + (z1 - z0) * t);
             LevelChunk c = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
             if (c == null) {
+                C_UNLOADED.incrementAndGet();
                 return UNLOADED;
             }
             // ★ NO_LEAVES：树叶不算地表，避免桥连到树冠上
@@ -219,6 +275,7 @@ public final class FragmentBridges {
             }
         }
         if (ai < 0) {
+            C_NO_LINE.incrementAndGet();
             return NO_BRIDGE;
         }
         int a = ai;
@@ -234,6 +291,7 @@ public final class FragmentBridges {
             }
         }
         if (bi < 0) {
+            C_NO_LINE.incrementAndGet();
             return NO_BRIDGE;
         }
         int b = bi;
@@ -243,9 +301,41 @@ public final class FragmentBridges {
         if (b <= a + 1) {
             return NO_BRIDGE;   // 已经连着
         }
+
+        // ★ 端点合格性：y>60 + 地表白名单 + 上方 8 格露天。
+        //   不合格就沿连线往里退，最多 ENDPOINT_SEARCH 格（玩家选定：退而不是直接放弃）。
+        int na = -1;
+        for (int i = a; i <= Math.min(b - 2, a + ENDPOINT_SEARCH); i++) {
+            int xa = (int) Math.floor(x0 + (x1 - x0) * (i / (double) steps));
+            int za = (int) Math.floor(z0 + (z1 - z0) * (i / (double) steps));
+            if (validEndpoint(level, xa, za)) {
+                na = i;
+                break;
+            }
+        }
+        if (na < 0) {
+            C_NO_ENDPOINT.incrementAndGet();
+            return NO_BRIDGE;
+        }
+        int nb = -1;
+        for (int i = b; i >= Math.max(na + 2, b - ENDPOINT_SEARCH); i--) {
+            int xb = (int) Math.floor(x0 + (x1 - x0) * (i / (double) steps));
+            int zb = (int) Math.floor(z0 + (z1 - z0) * (i / (double) steps));
+            if (validEndpoint(level, xb, zb)) {
+                nb = i;
+                break;
+            }
+        }
+        if (nb < 0) {
+            C_NO_ENDPOINT.incrementAndGet();
+            return NO_BRIDGE;
+        }
+        a = na;
+        b = nb;
         if (!relaxed) {
             for (int i = a + 1; i < b; i++) {
                 if (solid[i]) {
+                    C_MID_FRAG.incrementAndGet();
                     return NO_BRIDGE;   // 中间有别的碎片 → 不跨碎片连
                 }
             }
@@ -257,16 +347,22 @@ public final class FragmentBridges {
         int ex1 = (int) Math.floor(x0 + (x1 - x0) * (b / (double) steps));
         int ez1 = (int) Math.floor(z0 + (z1 - z0) * (b / (double) steps));
         if (sameFragment(level, ex0, ez0, ex1, ez1)) {
+            C_SAME_FRAG.incrementAndGet();
             return NO_BRIDGE;
         }
 
         double span = (b - a) * (len / steps);
         if (span < MIN_SPAN || span > HARD_MAX_SPAN) {
+            C_SPAN.incrementAndGet();
             return NO_BRIDGE;
         }
         int y0 = hgt[a];
         int y1 = hgt[b];
-        if (Math.abs(y1 - y0) > (relaxed ? MAX_DY * 4 : MAX_DY)) {
+        // ★ 坡度约束：tan = |落差| / 水平跨距，必须 < MAX_TAN(1.1)。
+        //   原来只比 MAX_DY(48) 绝对值，短跨也能很陡；且 relaxed 放宽到 4 倍。
+        //   现在严格 / relaxed 用同一个门槛。
+        if (span < 1.0D || Math.abs(y1 - y0) / span >= MAX_TAN) {
+            C_TAN.incrementAndGet();
             return NO_BRIDGE;
         }
 
@@ -309,6 +405,7 @@ public final class FragmentBridges {
             }
             prevY = py;
         }
+        C_BUILT.incrementAndGet();
         return BUILT;
     }
 
@@ -347,6 +444,37 @@ public final class FragmentBridges {
             }
         }
         return false;
+    }
+
+    /**
+     * 该列能否作为桥端点。三个条件缺一不可：
+     * <ol>
+     *   <li>地表高度 {@code h} 满足 {@code MIN_ENDPOINT_Y < h <= MAX_SURFACE_Y}
+     *       （两端都必须 y > 60）</li>
+     *   <li>{@code h-1} 的方块属于 {@link #SURFACE_BLOCKS} —— 只认草/沙/红沙/泥土/粗土/灰化土/砂砾，
+     *       排除裸露岩层与洞穴</li>
+     *   <li>{@code h .. h+7} 全空气 —— 端点必须是露天的，不能是洞穴里/悬崖下</li>
+     * </ol>
+     */
+    private static boolean validEndpoint(ServerLevel level, int x, int z) {
+        LevelChunk c = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+        if (c == null) {
+            return false;   // 不触发加载
+        }
+        int h = c.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (h <= MIN_ENDPOINT_Y || h > MAX_SURFACE_Y) {
+            return false;
+        }
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        if (!SURFACE_BLOCKS.contains(level.getBlockState(p.set(x, h - 1, z)).getBlock())) {
+            return false;
+        }
+        for (int d = 0; d < 8; d++) {
+            if (!level.getBlockState(p.set(x, h + d, z)).isAir()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void place(ServerLevel level, int x, int y, int z, BlockState state) {
