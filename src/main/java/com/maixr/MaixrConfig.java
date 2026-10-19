@@ -21,6 +21,22 @@ public final class MaixrConfig {
             BUILDER.comment("玩偶的变身语音（我将点燃星海）是否启用；其它玩偶音效不受影响")
                     .define("dollSoundEnabled", false);
 
+    /**
+     * 碎片连桥（旧的那套「寻找落脚点」逻辑：沿碎片中心连线采样、吸附端点、A* 寻路）。
+     *
+     * <p>★ <b>默认关闭</b>：实测它在区块加载阶段要读跨区块高度，绝大多数尝试以
+     * 「端点不合格 / 邻区块未加载」失败（日志：尝试 1000 / 建成 0），同时是进入世界
+     * 卡顿的主要来源。需要时可在配置里打开。</p>
+     */
+    public static final ModConfigSpec.BooleanValue BRIDGES_ENABLED =
+            BUILDER.comment("碎片连桥（旧版落脚点逻辑）：默认关闭，会明显拖慢世界加载")
+                    .define("bridgesEnabled", false);
+
+    /** 区块加载时清理悬空晶洞/岩浆（较重的方块扫描）。 */
+    public static final ModConfigSpec.BooleanValue GEODE_CLEANUP_ENABLED =
+            BUILDER.comment("区块加载时清理悬空晶洞与悬空岩浆：关闭可加快世界加载")
+                    .define("geodeCleanupEnabled", false);
+
     public static final ModConfigSpec.DoubleValue UNIFORM_BAND =
             BUILDER.comment("破碎世界全图统一碎裂水平的带进度（越大越碎；改动只影响未生成区块）")
                     .defineInRange("uniformBand", FractureDensityFunction.UNIFORM_BAND, 0.0D, 3.0D);
@@ -30,6 +46,16 @@ public final class MaixrConfig {
     /** 玩偶使用音效是否启用（配置未加载时回退默认 false）。 */
     public static boolean dollSoundEnabled() {
         return SPEC.isLoaded() && DOLL_SOUND_ENABLED.get();
+    }
+
+    /** 碎片连桥是否启用（默认 false）。 */
+    public static boolean bridgesEnabled() {
+        return SPEC.isLoaded() && BRIDGES_ENABLED.get();
+    }
+
+    /** 区块加载时是否清理悬空晶洞/岩浆（默认 true）。 */
+    public static boolean geodeCleanupEnabled() {
+        return SPEC.isLoaded() && GEODE_CLEANUP_ENABLED.get();
     }
 
     /** 统一碎裂带进度（配置未加载时回退默认值）。 */

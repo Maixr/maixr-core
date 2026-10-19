@@ -105,6 +105,8 @@ public final class MaixrDressingPass {
         VoidDebrisCleanup.run(level, chunk);
         // 大碎片内的小湖泊（必带甘蔗）—— 碎裂场把地表水挖掉了，这里补取水点
         SurfaceLakes.run(level, chunk);
+        // ★ 裂缝桥：纯本区块高度图、不排队、不读邻区块 —— 这是唯一不依赖加载时机的桥
+        CrackBridges.run(level, chunk);
         ServerLevel serverLevel = (ServerLevel) level.getLevel();
         FractureDensityFunction fracture = buildFracture(serverLevel);
         if (fracture == null) {

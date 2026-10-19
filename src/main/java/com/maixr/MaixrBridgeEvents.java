@@ -30,13 +30,14 @@ public final class MaixrBridgeEvents {
         if (!(level.getChunkSource().getGenerator() instanceof BrokenOverworldChunkGenerator)) {
             return;
         }
-        // ★ 老区块补跑：世界生成阶段的清理只覆盖新区块，
-        //   已经生成过的区域里悬空晶洞会一直留着。这里在区块加载时补一次
-        //   （maybeHas 快路径让它足够便宜）。
-        VoidDebrisCleanup.run(level, chunk);
-        // v4：以碎片为单位，每碎片最多 5 座，端点吸附到真实地表（见 FragmentBridges）
-        FragmentBridges.run(level, chunk);
-        // 虚空晶洞：整坨判定，与地形零接触的整坨删除
-        GeodeBlobCleanup.run(level, chunk);
+        // ★ 全部改为可配置（默认：连桥关闭、晶洞清理开启）
+        if (MaixrConfig.geodeCleanupEnabled()) {
+            // 老区块补跑：世界生成阶段的清理只覆盖新区块
+            VoidDebrisCleanup.run(level, chunk);
+            GeodeBlobCleanup.run(level, chunk);
+        }
+        if (MaixrConfig.bridgesEnabled()) {
+            FragmentBridges.run(level, chunk);
+        }
     }
 }
