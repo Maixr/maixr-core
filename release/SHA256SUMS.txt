@@ -1,0 +1,1 @@
+a30684cecb8c6f490763deb4b754fd6b9b103800b19d6d92e844ea3ece000f5d  MaixrCore-1.21.1-2.0.0.jar
