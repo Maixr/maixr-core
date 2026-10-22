@@ -1,1 +1,1 @@
-db34694eabf1facb167d767d33aa903c888cdb99fb9aba2db91dcea4915c4e4f  MaixrCore-1.21.1-2.0.0.jar
+069d84e9fe3d49db87a0c846e3367759f1d24eb44b6340c2dcf71055c2cad074  MaixrCore-1.21.1-2.0.0.jar

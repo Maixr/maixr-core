@@ -133,6 +133,8 @@ public class MaixrMod {
         modBus.addListener(MaixrAe2Integration::registerCapabilities);
         // 碎片连桥：区块加载后建桥（生成阶段建桥会因跨区块读高度而崩服）
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MaixrBridgeEvents::onChunkLoad);
+        // /maixr list-recipe / list-recipeless —— 从快捷栏+副手生成 KubeJS 配方脚本（点击复制）
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MaixrCommands::register);
         MaixrChunkGenerators.register(modBus);
         // 自定义密度函数类型（破碎世界碎裂场：noise_settings JSON 引用 maixr:xxx）
         MaixrDensityFunctions.register(modBus);
