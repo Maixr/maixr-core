@@ -30,14 +30,15 @@ public final class MaixrBridgeEvents {
         if (!(level.getChunkSource().getGenerator() instanceof BrokenOverworldChunkGenerator)) {
             return;
         }
-        // ★ 全部改为可配置（默认：连桥关闭、晶洞清理开启）
+        // ★ 全部改为可配置，两个开关默认均关闭（bridgesEnabled=道路网、geodeCleanupEnabled=加载期清理）
         if (MaixrConfig.geodeCleanupEnabled()) {
             // 老区块补跑：世界生成阶段的清理只覆盖新区块
             VoidDebrisCleanup.run(level, chunk);
             GeodeBlobCleanup.run(level, chunk);
         }
         if (MaixrConfig.bridgesEnabled()) {
-            FragmentBridges.run(level, chunk);
+            // ★ 走新版碎片道路网（RNG 选边 + A* + SavedData 去重）；旧版 FragmentBridges 已退役
+            FragmentRoadNetwork.run(level, chunk);
         }
     }
 }

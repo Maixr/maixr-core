@@ -13,11 +13,18 @@ context: |
 
   ## 当前能力（全部已实现；代码在 src/main/java/com/maixr/）
   - 破碎世界类型 maixr:broken（capability: broken-world-type）：
-    渐变虚空主世界 BrokenOverworldChunkGenerator（出生点 20% 虚空 → 50 区块≈800 格处 95%，确定性哈希）；
-    地形阶段（fillFromNoise/buildSurface/applyCarvers）跳过虚空区块，结构阶段永不跳过；
+    统一碎裂场主世界 BrokenOverworldChunkGenerator（全图统一碎裂水平
+    UNIFORM_BAND=2.0，无平静区、无渐变虚空；同种子同坐标确定性）；
+    碎裂在 vanilla 密度管线内求值（不覆写 fillFromNoise/buildSurface/applyCarvers，
+    旧「虚空区块跳过地形阶段」逻辑已随 v2 重写删除，主 spec 明文 MUST NOT 存在）；
     天空结构 SkyStructurePlacer（1/100 区块、y≥201、dry-run 搬移校验、BIOMES 阶段 maskSkyReferences 屏蔽 Beardifier 地基）；
     空域浮岩 SkyStoneClusterFeature（y=110~170、1/8 区块、35% 陨石团簇 + 65% 粗矿块，16 种候选按模组过滤）；
-    出生/复活走原版逻辑（平静区地表；开局空岛系统已移除）。
+    出生点由 BrokenSpawnSearch 接管（碎裂场掩码预筛 + 真实区块校验，仅新世界；开局空岛系统已移除）；
+    碎裂场仅作用于主世界（下界/末地为原版生成，broken_nether/broken_end 已删除）；
+    通行与补给：裂缝桥 CrackBridges（生成期常开、纯本区块）+ 碎片道路网 FragmentRoadNetwork
+    （bridgesEnabled 默认关、A* 寻路、SavedData 去重、tick 补建）+ 伴生岛 SurfaceLakes（六型确定性分派）；
+    悬空晶洞三层治理（mixin 生成拦截 / 生成期 VoidDebrisCleanup / 加载期 GeodeBlobCleanup，
+    geodeCleanupEnabled 默认关）；碎屑子层平滑抖动 Voronoi。
   - 玩偶接入 ME 网络（capability: doll-ae2-network）：
     MaixrDollBlockEntity extends AENetworkedBlockEntity（REQUIRE_CHANNEL + IGridTickable），
     每 1200 tick 产出 1 个自己进网络存储，满仓 100 tick 重试；TruthDollBlockEntity 只换产出物；
@@ -26,9 +33,14 @@ context: |
   - 创造猪咪复制配方（capability: pigmee-duplication）：
     1 创造猪咪（ae2lt:creative_pigmee_fumo）+ 1 任意物品 → 复制 64 个，猪咪被消耗；
     NBT 里藏任何猪咪 id 的容器物品拒绝复制。
+  - /maixr 配方脚本命令（capability: maixr-recipe-commands）：
+    快捷栏 0~8 材料 + 副手产物 → 点击复制的 KubeJS 脚本
+    （shaped/shapeless/烹饪五类/锻造/remove + Create/Mekanism/AE2 类型白名单，
+    每条带 event.remove 覆盖行与 maixr: 配方 id）；recipe-ids / recipe-dump 查询；
+    不依赖 KubeJS（只生成文本）。
   - 人造排污/粉红鸟巢多方块机的 Forge 1.20.1 旧代码（原 _deferred_nest/）已整体删除
     （依赖已被 NeoForge 移除的 LazyOptional；git 历史可查），如需重做须按 NeoForge 能力注册方式整套重写。
-  - 已整体移除的系统（不要再为其写规范）：伊甸工程、裂隙抉择、弧光 Boss、转化桌、故事物品、虚空凝尘、/maixr 指令。
+  - 已整体移除的系统（不要再为其写规范）：伊甸工程、裂隙抉择、弧光 Boss、转化桌、故事物品、虚空凝尘。
 
   ## 代码规范（1.21.1 移植沉淀的硬规则）
   - 网络包必须走 RegisterPayloadHandlersEvent 注册（1.21 禁止运行期注册）；net.minecraft.client.* 类引用只允许出现在

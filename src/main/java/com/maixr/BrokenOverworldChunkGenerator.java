@@ -159,8 +159,10 @@ public class BrokenOverworldChunkGenerator extends NoiseBasedChunkGenerator {
         try {
             super.applyBiomeDecoration(level, chunk, structureManager);
         } catch (RuntimeException e) {
-            MaixrMod.LOGGER.warn("[破碎] 区块 ({}, {}) 结构放置异常，已跳过（天空结构越界读防线）: {}",
-                    chunk.getPos().x, chunk.getPos().z, e.toString());
+            // ★ 完整异常栈必须落日志：e.toString() 只有 "Exception generating new chunk" 包装层，
+            //   看不到真实异常源（越界读/结构放置的具体位置），排查天空结构防线漏洞全靠它
+            MaixrMod.LOGGER.warn("[破碎] 区块 ({}, {}) 结构放置异常，已跳过（天空结构越界读防线）",
+                    chunk.getPos().x, chunk.getPos().z, e);
         }
         // ★ 材质 dressing（design D4）：装饰完成后的链尾确定性逐方块置换
         //   （震中幽匿侵蚀 / 碎屑带天空石结晶；潜声装置禁令见 MaixrDressingPass）

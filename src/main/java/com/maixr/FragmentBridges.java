@@ -19,6 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 碎片连桥 v6 —— 以碎片（板块）为单位，每碎片最多 {@value #NEIGHBORS} 座。
  *
+ * <p><b>★ 已退役</b>：{@code bridgesEnabled} 现指向新实现
+ * {@link FragmentRoadNetwork}（RNG 选边 + A* 寻路 + SavedData 去重 + tick 补建）。
+ * 本类保留为历史参照，不再被任何调用点引用；重启用前须重新接线。</p>
+ *
  * <h2>v6 相对 v5 的修正（全部来自玩家实机反馈）</h2>
  * <ul>
  *   <li><b>去掉栏杆</b>（玩家：桥不需要围栏）。</li>

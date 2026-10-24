@@ -131,13 +131,21 @@ public class MaixrMod {
         MemoryDollTransforms.register(modBus);
         // AE2：两个玩偶方块实体必须显式注册「网络节点宿主」能力，否则线缆连不上
         modBus.addListener(MaixrAe2Integration::registerCapabilities);
-        // 碎片连桥：区块加载后建桥（生成阶段建桥会因跨区块读高度而崩服）
+        // 碎片连桥：区块加载后由碎片道路网建桥（生成阶段建桥会因跨区块读高度而崩服）
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MaixrBridgeEvents::onChunkLoad);
+        // 道路网重试队列：服务端 tick 尾补建「邻区块未加载」的碎片（队列空时零开销）
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                (net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) ->
+                        event.getServer().getAllLevels().forEach(FragmentRoadNetwork::tick));
         // /maixr list-recipe / list-recipeless —— 从快捷栏+副手生成 KubeJS 配方脚本（点击复制）
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MaixrCommands::register);
         MaixrChunkGenerators.register(modBus);
         // 自定义密度函数类型（破碎世界碎裂场：noise_settings JSON 引用 maixr:xxx）
         MaixrDensityFunctions.register(modBus);
+        // 破碎世界出生点接管（两段挂点都在游戏总线：CreateSpawnPosition 只取消
+        // vanilla 搜索，真正的两级搜索延后到 ServerStarted —— 见 BrokenSpawnSearch）
+        NeoForge.EVENT_BUS.addListener(BrokenSpawnSearch::onCreateSpawnPosition);
+        NeoForge.EVENT_BUS.addListener(BrokenSpawnSearch::onServerStarted);
         // 网络包注册：1.21 要求走 RegisterPayloadHandlersEvent（不能用 SimpleChannel 手动注册）
         modBus.addListener(MaixrNetwork::register);
         LOGGER.info("Maixr Core (NeoForge 1.21.1) loaded.");

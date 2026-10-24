@@ -32,3 +32,6 @@ desktop.ini
 
 # 其他 agent 的构建日志
 build_out_dsh.txt
+
+# Python 缓存
+__pycache__/

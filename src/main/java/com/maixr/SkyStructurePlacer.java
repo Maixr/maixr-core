@@ -330,12 +330,28 @@ public final class SkyStructurePlacer {
             //     搬移 piece 之后那个缓存就过期了。这里直接按 piece 现算。
             BoundingBox bb = piecesBBox(pieces);
 
-            // ①.5 ★ 写半径校验：piece 包围盒必须完全落在注册区块 ±WRITE_RADIUS_CHUNKS 内，
-            //       否则结构模板的 processor 阶段会读生成区域外的方块（崩服，见常量注释）
+            // ①.5 ★ 写半径校验（两道，出生点搜索实测教训）：
+            //   (a) 整体 bb 相对注册区块 ≤ WRITE_RADIUS_CHUNKS —— 保证 references 传播
+            //       到的所有放置区块都在整体 bb 邻域内；
+            //   (b) 每个 piece 自身跨度 ≤ WRITE_RADIUS_CHUNKS —— processor 阶段
+            //       （RuleProcessor.processBlock）读取的是「本 piece 模板全部方块」，
+            //       放置发生在 piece 所跨的任意区块，读取距离 = piece 自身跨度；
+            //       超长 piece（大型 jigsaw 的长桥/大船）从中间区块放置时必然越界
+            //       （Requested chunk unavailable，applyBiomeDecoration 兜底 catch
+            //       拦住后该区块被跳过、拖慢生成，实测连续多个区块中招）。
             int radius = writeRadiusExcess(bb, pos);
             if (radius > WRITE_RADIUS_CHUNKS) {
                 SKIP_REASONS.merge("结构超出写半径(radius=" + radius + "区块)", 1, Integer::sum);
                 return null;
+            }
+            for (StructurePiece piece : pieces) {
+                BoundingBox pb = piece.getBoundingBox();
+                int spanX = (pb.maxX() >> 4) - (pb.minX() >> 4) + 1;
+                int spanZ = (pb.maxZ() >> 4) - (pb.minZ() >> 4) + 1;
+                if (spanX > WRITE_RADIUS_CHUNKS || spanZ > WRITE_RADIUS_CHUNKS) {
+                    SKIP_REASONS.merge("piece跨度超写半径(x=" + spanX + ",z=" + spanZ + "区块)", 1, Integer::sum);
+                    return null;
+                }
             }
             int height = bb.maxY() - bb.minY();
             int maxBottom = heightAccessor.getMaxBuildHeight() - TOP_MARGIN - height;

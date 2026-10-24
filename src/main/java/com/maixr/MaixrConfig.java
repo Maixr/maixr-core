@@ -53,7 +53,7 @@ public final class MaixrConfig {
         return SPEC.isLoaded() && BRIDGES_ENABLED.get();
     }
 
-    /** 区块加载时是否清理悬空晶洞/岩浆（默认 true）。 */
+    /** 区块加载时是否清理悬空晶洞/岩浆（默认 false，重扫描会拖慢世界加载）。 */
     public static boolean geodeCleanupEnabled() {
         return SPEC.isLoaded() && GEODE_CLEANUP_ENABLED.get();
     }
