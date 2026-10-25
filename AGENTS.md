@@ -23,6 +23,11 @@ Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.0.0）。Java 21 + M
 - Curios 调用必须有 `ModList.isLoaded()` 守卫。
 - 文档中的常量值必须与代码常量一致，改代码同步改文档。
 
+## Git 约定
+
+- **当前工作分支：`feat/broken-gen-rewrite`（C 方案：破碎世界生成器结构性重写）。所有代码提交一律落在这个分支，不要直接提交 main**；main 仅作稳定基线（已同步 origin）。开工前确认 `git branch` 停在该分支。
+- 基准/测量产物（`run-bench*/`、`_bench-data/`、`logs/`、`_tools/classes/`，约 300MB 世界存档）已在 .gitignore，永不入库。
+
 ## 构建
 
 ```bash
