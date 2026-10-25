@@ -13,6 +13,7 @@ Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.0.0）。Java 21 + M
 
 - `_docs/破碎世界.md` — 破碎世界类型全部设计与踩坑（碎裂场 / 天空结构 / 浮岩；开局空岛已移除）。
 - `_docs/玩偶接入AE2.md` — 玩偶方块实体接入 ME 网络的实现要点。
+- `_docs/生成性能测量.md` — `/maixr bench` 随机传送基准与 spark 火焰图定位流程（测量口径陷阱必读）。
 
 ## 硬规则速查（详见 config.yaml）
 

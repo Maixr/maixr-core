@@ -1,0 +1,27 @@
+# 优化前参考哈希（任务 1.2）—— 效果一致性验收基准
+# 采集环境：MaixrCore 2.0.0 优化前构建（build/classes 2026-10-25 优化前状态）
+# 流程：run-bench/ 临时世界（seed 12345, level-type maixr\:broken, 端口 25566/25576）
+#   全新世界启动 → forceload add 15000 8000 15112 8112 → forceload add -9000 9000 -8888 9112
+#   → sleep 5 → stop → _tools/mca_blockhash.py 比对两个 region 文件
+# 口径（任务 1.1 定案，用户确认「效果相同即可」）：
+#   按区块 sections 方块哈希（palette 含 Properties + data longs）+ block_entities(id/坐标)；
+#   整文件 SHA256 不可用（region 时间戳）；同构建自漂移 = SurfaceLakes NBT 岛
+#   placeInWorld 的 level.getRandom()（设计内随机）：B vs C 逐块 diff =
+#   r.29.15: 19/750 差异（97.5% 相同）、r.-18.17: 12/864 差异（98.6% 相同），
+#   BE 层（id+坐标）两个 region 均 100% 一致。
+#
+# 参考哈希（capture C，2026-10-25）：
+run-bench/c1.mca  (r.29.15.mca)  chunks=750 sha256=27c33fc948681367d403083f17a01c99646c80c9cddc8fc22e43fde5cbf7ec23
+run-bench/c2.mca  (r.-18.17.mca) chunks=864 sha256=4daddb1bae0b9f3e40b0c5648d8e2b8eb1ebff05ca1f8fa2f3b76d56eff8a2c8
+# capture A/B 整文件哈希（记录漂移用，整文件口径已废弃）：
+#   A: d8f7d133... / 0a7045ac...
+#   B: b3f59015... / 68c5a2ec...
+#
+# forceload 计时基线（64 块/区域，同流程）：
+#   A: R1 27.45s  R2 26.89s
+#   B: R1 23.95s  R2 25.51s
+#   C: （计时未单列；以 A/B 为基线区间 ~24-27s）
+#
+# 验收方式：优化后每步重跑同流程，逐块 sections 哈希 vs capture C 逐块比对，
+# 相同率 ≥ 基线自漂移水平（r.29.15 ≥ 97.5%、r.-18.17 ≥ 98.6%）且差异区块仍为岛屿类。
+# capture C 的 region 文件留存：run-bench/c1.mca / run-bench/c2.mca（勿删）。

@@ -168,11 +168,62 @@ public final class PlateFieldLogic {
     }
 
     /**
+     * ★ survival 静态列缓存（design D2，2026-10-25 优化变更）：本函数是纯坐标函数，
+     * 但噪声块、dressing、离线 getBaseHeight 各调用方对同一列重复求值（JFR
+     * 2026-10-25：fineSurvival 5% + survival 3%）。静态 per-thread 直接映射列缓存
+     * 把跨调用方重复收敛为每列一次；值恒等（纯函数，缓存值=重算值）。
+     *
+     * <p>键 = cfgCode(scale, bandFloor, calmRadius) &lt;&lt; 52 ‖ (x,26bit) ‖ (z,26bit)：
+     * 参数三元组经 record 精确相等取恒等码（不同维度折算/静滞参数不串值）。
+     * 直接映射槽位模式出处：{@link FractureDensityFunction} 的 256 槽列缓存
+     * （已在线上验证；槽位错位只退化为重算，值仍正确）。</p>
+     */
+    private static final int SURVIVAL_CACHE_SLOTS = 2048;
+    private static final ThreadLocal<long[]> SURVIVAL_CACHE_KEYS =
+            ThreadLocal.withInitial(() -> fillNoCache(new long[SURVIVAL_CACHE_SLOTS]));
+    private static final ThreadLocal<double[]> SURVIVAL_CACHE_VALS =
+            ThreadLocal.withInitial(() -> new double[SURVIVAL_CACHE_SLOTS]);
+
+    private static long[] fillNoCache(long[] slots) {
+        java.util.Arrays.fill(slots, Long.MIN_VALUE);
+        return slots;
+    }
+
+    /** 参数三元组恒等码（record 精确相等，无碰撞）；码序号原子分配。 */
+    private record SurvivalCfg(double scale, double bandFloor, double calmRadius) {}
+
+    private static final java.util.Map<SurvivalCfg, Integer> SURVIVAL_CFG_CODES =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger SURVIVAL_CFG_SEQ =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    private static long survivalKey(double x, double z, double scale, double bandFloor, double calmRadius) {
+        int code = SURVIVAL_CFG_CODES.computeIfAbsent(
+                new SurvivalCfg(scale, bandFloor, calmRadius), k -> SURVIVAL_CFG_SEQ.incrementAndGet());
+        return ((long) code << 52)
+                | (((long) Math.floor(x) & 0x3FFFFFFL) << 26)
+                | ((long) Math.floor(z) & 0x3FFFFFFL);
+    }
+
+    /**
      * 板块存活率 ∈ [0,1]：死亡板块内部 → 0；存活板块内部 → 1；
      * 板块边界过渡带在死亡/存活之间平滑（海岸线沿抖动 Voronoi 边界）。
-     * 碎屑带额外乘碎屑子层。
+     * 碎屑带额外乘碎屑子层。带静态列缓存，实际求值在 {@link #survivalUncached}。
      */
     public static double survival(double x, double z, double scale, double bandFloor, double calmRadius) {
+        long key = survivalKey(x, z, scale, bandFloor, calmRadius);
+        int slot = (int) ((key * 0x9E3779B97F4A7C15L) >>> 53) & (SURVIVAL_CACHE_SLOTS - 1);
+        long[] keys = SURVIVAL_CACHE_KEYS.get();
+        if (keys[slot] == key) {
+            return SURVIVAL_CACHE_VALS.get()[slot];
+        }
+        double value = survivalUncached(x, z, scale, bandFloor, calmRadius);
+        keys[slot] = key;
+        SURVIVAL_CACHE_VALS.get()[slot] = value;
+        return value;
+    }
+
+    private static double survivalUncached(double x, double z, double scale, double bandFloor, double calmRadius) {
         double band = FractureDensityFunction.bandProgress(x, z, scale, bandFloor, calmRadius);
         double deathProb = FractureDensityFunction.curve(FractureDensityFunction.PLATE_DEATH, band);
         if (deathProb >= 1.0D) {

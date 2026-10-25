@@ -42,7 +42,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  *       生成区块</b>。</li>
  *   <li><b>{@code ServerStartedEvent}</b>（{@code prepareLevels} 之后、玩家可连接
  *       之前）：此时区块调度系统已全速运转（ticket 已注册），与游戏运行时同环境，
- *       同步 {@code getChunk} 安全 —— 在这里跑两级搜索并写 {@code levelData.setSpawn}。
+ *       同步 {@code getChunk} 安全 —— 在这里跑三级搜索并写 {@code levelData.setSpawn}。
  *       玩家连接在网络 tick 里处理，回调阻塞期间不可能有人进入世界。</li>
  * </ol>
  *
@@ -54,7 +54,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  * 30 格内原木」口径已按用户决定移除：碎裂区存活碎块上树木稀疏，
  * 该口径 runServer 实测螺旋到 13 区块（290 个预筛命中）仍无合格列。</p>
  *
- * <h2>两级搜索（design D2）</h2>
+ * <h2>三级搜索（design D2 + 2026-10-24 性能变更）</h2>
  *
  * <ol>
  *   <li><b>掩码离线预筛</b>：碎裂场是纯坐标函数，不加载区块即可判定任意列
@@ -65,8 +65,26 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  *       <i>历史语义对账：文档早先写的「掩码 &gt; 0 即可能有地形」是初版乘法掩码
  *       （输出 ∈ [-0.3, 1]）的口径，减法重写后同一语义映射为
  *       {@code compute > -TEAR_SCALE}。</i></li>
- *   <li><b>真实区块校验</b>：预筛命中区块按螺旋序 {@code getChunk} 真实生成，
- *       逐列检查上述口径。</li>
+ *   <li><b>逐列高度场离线校验</b>：对预筛命中区块逐列调 vanilla 公开 API
+ *       {@code NoiseBasedChunkGenerator#getBaseHeight(x, z, WORLD_SURFACE, level,
+ *       randomState)}，返回 &gt; minY 即「该列在噪声阶段存在实体」。它内部用
+ *       一次性离线 {@code NoiseChunk}（{@code Blender.empty()}，完全不接触区块
+ *       系统、无死锁面）从顶向下按<b>真实插值管线</b>求首个非空气方块；本模组
+ *       {@code aquifers_enabled=false} 且 {@code sea_level=-1000}（高于 minY），
+ *       {@code Aquifer.createDisabled} 语义下「非空气 ⇔ 插值后
+ *       {@code final_density > 0}」，与真实生成噪声阶段逐位一致（同一
+ *       {@code RandomState}）。<b>为什么必须走这条 API 而不是拿离线
+ *       {@code NoiseChunk} 单点 {@code compute} final_density</b>：
+ *       {@code NoiseChunk.NoiseInterpolator.compute} 在插值循环外按点求值会抛
+ *       {@code IllegalStateException}，且非 {@code NoiseChunk} 上下文会退化成
+ *       未插值的 cell 函数（值不对）——单点路径两条都不可用（1.21.1 反编译
+ *       核验）。每列新建单 cell 宽 {@code NoiseChunk(1)} 的代价是同区块 16 倍
+ *       cell 求值，但仍是毫秒级纯 CPU，比每候选 1~2s 的整块生成（8 邻块依赖链
+ *       + features + 光照）低 1~2 个数量级 —— 玩家实测旧两级搜索在原点附近
+ *       大片无合格列的种子下阻塞主线程约 2 分钟（TPS=0）。</li>
+ *   <li><b>真实区块校验</b>：离线两级预筛都命中的区块才按螺旋序
+ *       {@code getChunk} 真实生成，逐列检查上述口径。features（树/湖/浮岩/晶洞）
+ *       与结构地基的离线不可见差异由这一级兜底。</li>
  * </ol>
  *
  * <h2>与真实碎裂场逐位一致的原因</h2>
@@ -98,18 +116,25 @@ public final class BrokenSpawnSearch {
     private final ServerLevelData levelData;
     /** 离线碎裂场掩码（与真实碎裂场同一噪声实例，见类注释）。 */
     private final FractureDensityFunction fractureMask;
+    /** 世界生成实际使用的生成器（getBaseHeight 走它，内部即离线 NoiseChunk）。 */
+    private final BrokenOverworldChunkGenerator generator;
+    private final RandomState randomState;
     private final int minY;
 
     // 搜索统计（一次性日志用）
     private int maskCandidateChunks;
+    private int offlineHits;
     private int generatedChunks;
     private long maskColumnEvals;
+    private long screenColumnEvals;
     private long startedNano;
 
     private BrokenSpawnSearch(ServerLevel level, ServerLevelData levelData) {
         this.level = level;
         this.levelData = levelData;
         this.fractureMask = buildOfflineMask(level);
+        this.generator = (BrokenOverworldChunkGenerator) level.getChunkSource().getGenerator();
+        this.randomState = level.getChunkSource().randomState();
         this.minY = level.getMinBuildHeight();
     }
 
@@ -136,7 +161,7 @@ public final class BrokenSpawnSearch {
 
     /**
      * 第二段：{@code ServerStartedEvent}（prepareLevels 之后、玩家可连接之前）——
-     * 区块调度系统已全速运转，在这里跑两级搜索并写入出生点。
+     * 区块调度系统已全速运转，在这里跑三级搜索并写入出生点。
      * 仅当第一段标记了「新世界初始化」才执行（老存档重启 spawn 不动）。
      */
     public static void onServerStarted(ServerStartedEvent event) {
@@ -153,7 +178,7 @@ public final class BrokenSpawnSearch {
     }
 
     // ==========================================================================
-    //  两级搜索主循环：区块粒度无限螺旋（半径逐轮扩大，不退化 —— 用户决定）
+    //  三级搜索主循环：区块粒度无限螺旋（半径逐轮扩大，不退化 —— 用户决定）
     // ==========================================================================
 
     /**
@@ -185,10 +210,10 @@ public final class BrokenSpawnSearch {
         MaixrMod.LOGGER.error("[破碎] 出生点搜索耗尽 int 螺旋范围仍未命中（理论上不可能）");
     }
 
-    /** 预筛命中 → 真实生成 → 列校验；任一环节失败则螺旋继续。 */
+    /** 掩码预筛 → 离线高度场校验 → 真实生成 → 列校验；任一环节失败则螺旋继续。 */
     private boolean tryChunk(int cx, int cz) {
         if (!chunkMayHaveTerrain(cx, cz)) {
-            return false;   // 掩码预筛排除（全撕列区块，不浪费生成）
+            return false;   // 掩码预筛排除（全撕列区块，不浪费求值与生成）
         }
         this.maskCandidateChunks++;
         // 限流诊断日志：观察螺旋推进与命中分布（一次性搜索，量可控）
@@ -196,19 +221,24 @@ public final class BrokenSpawnSearch {
             MaixrMod.LOGGER.info("[破碎] 出生点搜索：预筛命中 #{}，区块 ({}, {}) 距原点 {} 区块",
                     this.maskCandidateChunks, cx, cz, Math.max(Math.abs(cx), Math.abs(cz)));
         }
-        LevelChunk chunk = this.level.getChunk(cx, cz);   // 同步真实生成
+        if (!chunkHasSpawnableColumn(cx, cz)) {
+            return false;   // 离线高度场校验排除（全列无合格出生位）—— 不发起整块生成
+        }
+        this.offlineHits++;
+        LevelChunk chunk = this.level.getChunk(cx, cz);   // 同步真实生成（仅离线预筛双命中的候选）
         this.generatedChunks++;
         BlockPos spawn = findSpawnColumnInChunk(chunk);
         if (spawn == null) {
-            return false;   // 预筛误报（全断面虚空等）—— 螺旋继续，不退化
+            return false;   // features 差异导致的离线误报 —— 螺旋继续，不退化
         }
         this.levelData.setSpawn(spawn, 0.0F);
         BlockState surface = this.level.getBlockState(spawn.below());
         MaixrMod.LOGGER.info(
-                "[破碎] 出生点选定：{}（表面方块 {}，距原点 {} 格；预筛命中区块 {} / 实际生成区块 {} / 掩码求值 {} 列，耗时 {}ms）",
+                "[破碎] 出生点选定：{}（表面方块 {}，距原点 {} 格；预筛命中区块 {} / 离线命中区块 {} / 实际生成区块 {} / 掩码求值 {} 列 / 离线求值 {} 列，耗时 {}ms）",
                 spawn.toShortString(), surface.getBlock().getName().getString(),
                 Math.round(Math.hypot(spawn.getX(), spawn.getZ())),
-                this.maskCandidateChunks, this.generatedChunks, this.maskColumnEvals,
+                this.maskCandidateChunks, this.offlineHits, this.generatedChunks,
+                this.maskColumnEvals, this.screenColumnEvals,
                 (System.nanoTime() - this.startedNano) / 1_000_000L);
         return true;
     }
@@ -251,6 +281,30 @@ public final class BrokenSpawnSearch {
                         new DensityFunction.SinglePointContext(baseX + lx, 0, baseZ + lz));
                 this.maskColumnEvals++;
                 if (tear > fullTear) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 第二级：逐列高度场离线校验 —— 逐列调 vanilla 公开 API
+     * {@code getBaseHeight(x, z, WORLD_SURFACE, level, randomState)}，返回
+     * &gt; minY 即「该列在噪声阶段存在实体」（非空气 ⇔ 插值后
+     * {@code final_density &gt; 0}，与真实生成逐位一致，见类注释「三级搜索」）。
+     * 全虚列返回 {@code minY} 即无效。内部离线 {@code NoiseChunk} 不接触区块系统；
+     * 列扫描次序与真实校验一致（lz 外层、lx 内层），命中即短路。
+     */
+    private boolean chunkHasSpawnableColumn(int cx, int cz) {
+        int baseX = cx << 4;
+        int baseZ = cz << 4;
+        for (int lz = 0; lz < 16; lz++) {
+            for (int lx = 0; lx < 16; lx++) {
+                this.screenColumnEvals++;
+                int top = this.generator.getBaseHeight(baseX + lx, baseZ + lz,
+                        Heightmap.Types.WORLD_SURFACE, this.level, this.randomState);
+                if (top > this.minY) {
                     return true;
                 }
             }

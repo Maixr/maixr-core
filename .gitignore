@@ -35,3 +35,9 @@ build_out_dsh.txt
 
 # Python 缓存
 __pycache__/
+
+# ---- 基准 / 测量产物（世界存档、region、JFR 采样；均可由种子+构建再生，~300MB 不入库） ----
+run-bench*/
+_bench-data/
+logs/
+_tools/classes/

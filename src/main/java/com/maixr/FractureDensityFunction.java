@@ -301,13 +301,18 @@ public final class FractureDensityFunction implements DensityFunction.SimpleFunc
      * {@code fillArray} 批量路径会<b>绕过 JSON 里 {@code cache_2d} 包装器的
      * 单条目缓存</b>直接透传到这里 —— {@code fillAllDirectly} 以 y 为外层、
      * xz 为内层逐点遍历，实测单区块生成管线 fracture 被调 ~300 万次
-     * （64 槽时 miss 64%）。直接映射 256 槽覆盖一个 fillArray 批次的全部列。
+     * （64 槽时 miss 64%）。直接映射槽位按碰撞对期望定档：
+     * 逐方块填充阶段每批次 ~256 列，槽位数 N 下两列共享槽位的期望对数
+     * ≈ C(256,2)/N —— 256 槽 ≈ 94 对（~37% 列两两互踢，JFR 实测逐行风暴
+     * ~3.6 万次重复求值/区块），4096 槽 ≈ 8 对（风暴量级回落 ~12 倍），
+     * 内存 4096 × (8+8) B = 64KB/线程/实例；16384 槽 ≈ 2 对（192KB）作为
+     * 保留升档（见变更 2026-10-25-fracture-perf-leaps design D1）。
      *
      * <p>线程安全：worker 池并发调用 —— 用 <b>per-instance ThreadLocal</b>
      * 保证「位置↔值」原子配对（静态缓存会跨实例污染：下界/末地/离线掩码的
      * 同列输出不同）。mapAll 重建的副本自带冷缓存，无正确性影响。</p>
      */
-    private static final int CACHE_SLOTS = 256;
+    private static final int CACHE_SLOTS = 4096;
     private final ThreadLocal<long[]> columnCachePos =
             ThreadLocal.withInitial(() -> fillNO_CACHE(new long[CACHE_SLOTS]));
     private final ThreadLocal<double[]> columnCacheValue =

@@ -1,0 +1,11 @@
+完全撕裂面积占比采样 seed=12345（maixr:broken_overworld，uniformBand=2.0，分类：torn_exact = 精确 -4.0；torn_band = [-4.0,-3.999) 即 L2 短路命中；intact = 0.0；partial = 其余过渡带）
+主窗口 64x64 区块 [-512,512)             torn_exact= 81.06%  torn_band(L2)= 81.13%  intact= 12.96%  partial=  5.91%  (n=65536)
+R1 16x16 区块                         torn_exact= 80.35%  torn_band(L2)= 80.44%  intact= 13.60%  partial=  5.96%  (n=4096)
+R2 16x16 区块                         torn_exact= 68.07%  torn_band(L2)= 68.14%  intact= 25.88%  partial=  5.98%  (n=4096)
+R3 16x16 区块                         torn_exact= 78.39%  torn_band(L2)= 78.47%  intact= 15.26%  partial=  6.27%  (n=4096)
+R4 16x16 区块                         torn_exact= 81.96%  torn_band(L2)= 82.01%  intact= 11.28%  partial=  6.71%  (n=4096)
+R5 16x16 区块                         torn_exact= 68.65%  torn_band(L2)= 68.77%  intact= 23.00%  partial=  8.23%  (n=4096)
+R6 16x16 区块                         torn_exact= 81.88%  torn_band(L2)= 81.88%  intact= 12.67%  partial=  5.44%  (n=4096)
+R7 16x16 区块                         torn_exact= 74.80%  torn_band(L2)= 74.93%  intact= 17.75%  partial=  7.32%  (n=4096)
+R8 16x16 区块                         torn_exact= 88.79%  torn_band(L2)= 88.79%  intact=  6.37%  partial=  4.83%  (n=4096)
+R9 16x16 区块                         torn_exact= 77.42%  torn_band(L2)= 77.51%  intact= 16.36%  partial=  6.13%  (n=4096)

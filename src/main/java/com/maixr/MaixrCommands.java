@@ -75,7 +75,27 @@ public final class MaixrCommands {
                 .then(Commands.literal("recipe-dump")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.string())
                                 .executes(c -> dumpRecipe(c.getSource(),
-                                        com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id"))))));
+                                        com.mojang.brigadier.arguments.StringArgumentType.getString(c, "id")))))
+                // ---- 生成性能测量基准（OP 权限；会话式采样与报告，见 MaixrBench）----
+                .then(Commands.literal("bench")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.literal("tp")
+                                .then(Commands.argument("count", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, MaixrBench.MAX_COUNT))
+                                        .executes(c -> MaixrBench.start(c.getSource(),
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "count"),
+                                                MaixrBench.DEFAULT_MIN_R, MaixrBench.DEFAULT_MAX_R))
+                                        .then(Commands.argument("minR", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                                .executes(c -> MaixrBench.start(c.getSource(),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "count"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "minR"),
+                                                        MaixrBench.DEFAULT_MAX_R))
+                                                .then(Commands.argument("maxR", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0))
+                                                        .executes(c -> MaixrBench.start(c.getSource(),
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "count"),
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "minR"),
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "maxR")))))))
+                        .then(Commands.literal("stop")
+                                .executes(c -> MaixrBench.stop(c.getSource())))));
     }
 
     // ------------------------------------------------------------ 通用

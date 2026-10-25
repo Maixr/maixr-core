@@ -98,6 +98,14 @@ KubeJS 配方脚本：shaped / shapeless / 熔炼 / 高炉 / 烟熏 / 营火 / �
 `/maixr recipe-dump <id>` 可查询既有配方的 id 与结构。本模组**不依赖 KubeJS**——
 只生成脚本文本，不加载、不执行配方。
 
+### 9. /maixr bench 生成性能基准（OP）
+
+随机传送基准：`/maixr bench tp <次数> [最近] [最远]`（缺省 3000~20000 格）按
+「世界种子 + 参数 + 序号」确定性派生目的地（同种子同参数坐标序列相同），
+逐次记录墙钟与 MSPT 峰值，结束时汇总（含 MSPT 回落时长）；`/maixr bench stop`
+可中断。配合 spark 火焰图定位生成热点，操作手册见
+[生成性能测量](_docs/生成性能测量.md)。
+
 ---
 
 ## 历史
@@ -122,7 +130,7 @@ KubeJS 配方脚本：shaped / shapeless / 熔炼 / 高炉 / 烟熏 / 营火 / �
 - `openspec/changes/` —— 变更提案（`/opsx:propose` 发起，归档后进 `changes/archive/`）；
 - 校验：`openspec validate --specs --strict`。
 
-设计与排查文档在 `_docs/`：[玩偶接入AE2](\_docs/玩偶接入AE2.md)、[破碎世界](\_docs/破碎世界.md)。
+设计与排查文档在 `_docs/`：[玩偶接入AE2](\_docs/玩偶接入AE2.md)、[破碎世界](\_docs/破碎世界.md)、[生成性能测量](\_docs/生成性能测量.md)。
 
 ---
 

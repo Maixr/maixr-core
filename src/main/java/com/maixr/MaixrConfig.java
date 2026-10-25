@@ -58,9 +58,25 @@ public final class MaixrConfig {
         return SPEC.isLoaded() && GEODE_CLEANUP_ENABLED.get();
     }
 
-    /** 统一碎裂带进度（配置未加载时回退默认值）。 */
+    /**
+     * {@code uniformBand} 的静态原语缓存 —— 密度求值热路径（bandProgress 被逐列/
+     * 逐点调用）直接走 {@link ModConfigSpec.ConfigValue#get()} 实测占 worker 时间
+     * ~4-6%（JFR 2026-10-25，见 {@code _docs/生成性能测量.md}），改为配置事件刷新。
+     * 值恒等：缓存值即配置值（COMMON 配置不热更，Loading/Reloading 事件兜底刷新）。
+     */
+    private static volatile double cachedUniformBand = FractureDensityFunction.UNIFORM_BAND;
+
+    /** 配置加载/重载事件回调（MaixrMod 在 mod 总线注册）。非本模组配置直接忽略。 */
+    public static void refreshCache(net.neoforged.fml.config.ModConfig config) {
+        if (config != null && config.getSpec() == SPEC) {
+            cachedUniformBand = UNIFORM_BAND.get();
+            MaixrMod.LOGGER.info("[Maixr] uniformBand 缓存已刷新 = {}", cachedUniformBand);
+        }
+    }
+
+    /** 统一碎裂带进度（配置未加载时回退默认值；加载后走静态缓存，值恒等）。 */
     public static double uniformBand() {
-        return SPEC.isLoaded() ? UNIFORM_BAND.get() : FractureDensityFunction.UNIFORM_BAND;
+        return SPEC.isLoaded() ? cachedUniformBand : FractureDensityFunction.UNIFORM_BAND;
     }
 
     private MaixrConfig() {}

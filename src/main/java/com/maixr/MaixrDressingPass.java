@@ -196,18 +196,34 @@ public final class MaixrDressingPass {
     }
 
     /**
+     * 按 {@link RandomState} 身份复用的碎裂场实例（2026-10-25 优化变更 design D3）：
+     * 实例不可变（NoiseHolder/参数均 final），同维度共享安全；每区块新建会让
+     * {@link FractureDensityFunction} 的 ThreadLocal 列缓存每区块冷启动（256 列
+     * 重复求值）。volatile 保证跨 worker 线程安全发布；竞态最坏 = 重复构造一次，
+     * 值恒等无正确性影响。
+     */
+    private static volatile FractureDensityFunction cachedFracture;
+    private static volatile RandomState cachedRandomState;
+
+    /**
      * 用区块维度的当前 RandomState 构造与密度管线<b>同噪声实例</b>的碎裂场
-     * （见类注释「与碎裂场的一致性」）。
+     * （见类注释「与碎裂场的一致性」）；同 RandomState 直接复用缓存实例。
      */
     private static FractureDensityFunction buildFracture(ServerLevel serverLevel) {
         try {
             RandomState randomState = serverLevel.getChunkSource().randomState();
+            if (cachedFracture != null && cachedRandomState == randomState) {
+                return cachedFracture;
+            }
             NormalNoise crackNoise = randomState.getOrCreateNoise(CRACK_NOISE_KEY);
             Holder<NormalNoise.NoiseParameters> holder = serverLevel.registryAccess()
                     .registryOrThrow(Registries.NOISE).getHolderOrThrow(CRACK_NOISE_KEY);
-            return new FractureDensityFunction(
+            FractureDensityFunction fracture = new FractureDensityFunction(
                     new DensityFunction.NoiseHolder(holder, crackNoise),
                     new PlateFieldDensityFunction(1.0D), 1.0D);
+            cachedRandomState = randomState;
+            cachedFracture = fracture;
+            return fracture;
         } catch (Exception e) {
             MaixrMod.LOGGER.error("[破碎dressing] 构造碎裂场失败（跳过 dressing）: {}", e.toString());
             return null;

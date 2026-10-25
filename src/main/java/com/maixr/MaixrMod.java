@@ -120,6 +120,10 @@ public class MaixrMod {
     public MaixrMod(IEventBus modBus, net.neoforged.fml.ModContainer container) {
         // 配置：config/maixr-common.toml（玩偶音效开关 + 统一碎裂水平）
         container.registerConfig(net.neoforged.fml.config.ModConfig.Type.COMMON, MaixrConfig.SPEC);
+        // uniformBand 静态缓存刷新（值恒等缓存，见 MaixrConfig#refreshCache）：
+        // 密度热路径不再逐点走 ConfigValue.get（JFR 实测 ~4-6% worker 时间）
+        modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Loading e) -> MaixrConfig.refreshCache(e.getConfig()));
+        modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Reloading e) -> MaixrConfig.refreshCache(e.getConfig()));
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         TABS.register(modBus);
@@ -143,7 +147,7 @@ public class MaixrMod {
         // 自定义密度函数类型（破碎世界碎裂场：noise_settings JSON 引用 maixr:xxx）
         MaixrDensityFunctions.register(modBus);
         // 破碎世界出生点接管（两段挂点都在游戏总线：CreateSpawnPosition 只取消
-        // vanilla 搜索，真正的两级搜索延后到 ServerStarted —— 见 BrokenSpawnSearch）
+        // vanilla 搜索，真正的三级搜索延后到 ServerStarted —— 见 BrokenSpawnSearch）
         NeoForge.EVENT_BUS.addListener(BrokenSpawnSearch::onCreateSpawnPosition);
         NeoForge.EVENT_BUS.addListener(BrokenSpawnSearch::onServerStarted);
         // 网络包注册：1.21 要求走 RegisterPayloadHandlersEvent（不能用 SimpleChannel 手动注册）
