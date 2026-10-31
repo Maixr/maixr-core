@@ -3,7 +3,7 @@
 NeoForge **1.21.1** 整合包《Project Negentropy》的核心模组。
 
 - **modid**：`maixr`
-- **版本**：2.0.0
+- **版本**：2.3.1
 - **依赖**：Minecraft 1.21.1、NeoForge（mods.toml 要求 ≥21.1.0，开发环境 21.1.234）、
   **AE2 19.2+**（必需，玩偶接网络功能）；
   Curios（可选，缺失时佩戴自动回退原版头盔槽）、
@@ -144,7 +144,7 @@ KubeJS 配方脚本：shaped / shapeless / 熔炼 / 高炉 / 烟熏 / 营火 / �
 ./gradlew build --offline  # 离线：需先备好 _maven/ 本地镜像（存在才启用，见 settings.gradle）
 ```
 
-产物：`build/libs/MaixrCore-1.21.1-2.0.0.jar`
+产物：`build/libs/MaixrCore-1.21.1-2.3.1.jar`
 
 > `maven.neoforged.net` 在旧开发机不可达，因此 `settings.gradle` 保留了 `_maven`
 > 本地镜像优先的机制 —— **`_maven/` 目录存在时才启用**并摘掉 neoforged.net 远程仓库

@@ -1,6 +1,6 @@
 # Maixr Core — Agent 指南
 
-Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.0.0）。Java 21 + ModDevGradle 2.0.146。
+Minecraft NeoForge 1.21.1 核心模组（modid `maixr`，v2.3.1）。Java 21 + ModDevGradle 2.0.146。
 
 ## 规范入口（先读，按序）
 

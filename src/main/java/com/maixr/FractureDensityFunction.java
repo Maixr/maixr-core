@@ -328,12 +328,22 @@ public final class FractureDensityFunction implements DensityFunction.SimpleFunc
         return ((long) x << 32) ^ (z & 0xFFFFFFFFL);
     }
 
+    /**
+     * 槽位索引位移：{@code 64 - log2(CACHE_SLOTS)}。
+     *
+     * <p>★ 历史 bug（2026-10-31 修正）：原实现写死 {@code >>> 58}，只保留乘积累加的
+     * <b>最高 6 位</b>，再与 {@code CACHE_SLOTS - 1} 相与后<b>实际只有 64 个槽位生效</b>
+     * —— 4096 槽的容量与 64KB 内存开销都白付了，等价于一直跑在 64 槽档位。
+     * 这也解释了「L1 扩容后墙钟无可测变化」：容量从未真正扩大。</p>
+     */
+    private static final int SLOT_SHIFT = 64 - Integer.numberOfTrailingZeros(CACHE_SLOTS);
+
     @Override
     public double compute(DensityFunction.FunctionContext context) {
         int x = context.blockX();
         int z = context.blockZ();
         long key = columnKey(x, z);
-        int slot = (int) (key * 0x9E3779B97F4A7C15L >>> 58) & (CACHE_SLOTS - 1);
+        int slot = (int) (key * 0x9E3779B97F4A7C15L >>> SLOT_SHIFT) & (CACHE_SLOTS - 1);
         long[] keys = this.columnCachePos.get();
         if (keys[slot] == key) {
             return this.columnCacheValue.get()[slot];

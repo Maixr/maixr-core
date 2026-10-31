@@ -7,9 +7,9 @@ context: |
 
   ## 项目是什么
   Maixr Core —— Minecraft 整合包《Project Negentropy》的核心模组。
-  modid: maixr，版本 2.0.0；Java 21 + ModDevGradle 2.0.146 + NeoForge 21.1.234 + Minecraft 1.21.1。
+  modid: maixr，版本 2.3.1；Java 21 + ModDevGradle 2.0.146 + NeoForge 21.1.234 + Minecraft 1.21.1。
   构建：./gradlew build（需先备好本地 _maven/ 镜像与 libs/ 第三方 jar，见 .gitignore 与 README）。
-  产物：build/libs/MaixrCore-1.21.1-2.0.0.jar。
+  产物：build/libs/MaixrCore-1.21.1-2.3.1.jar。
 
   ## 当前能力（全部已实现；代码在 src/main/java/com/maixr/）
   - 破碎世界类型 maixr:broken（capability: broken-world-type）：
