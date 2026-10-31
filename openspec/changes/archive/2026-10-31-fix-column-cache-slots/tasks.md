@@ -31,7 +31,7 @@
 - [x] 4.1 `gradle.properties` 的 `mod_version` 2.0.0 → 2.3.1；验证方式：`./gradlew build` 产物名为 `MaixrCore-1.21.1-2.3.1.jar`
 - [x] 4.2 同步 `README.md` / `AGENTS.md` / `openspec/config.yaml` 中的版本与产物名表述；验证方式：三处 grep 结果与 `gradle.properties` 一致
 - [x] 4.3 更新 `release/` 下的 jar 与 `SHA256SUMS.txt`；验证方式：`sha256sum -c` 通过（4fd23f3e…159，OK）
-- [ ] 4.4 提交并推送 `main`，打 annotated tag `v2.3.1`，创建 GitHub Release 并上传 jar + 校验和；验证方式：`git ls-remote --tags` 可见、release API 返回该 tag 且 asset 可下载
+- [x] 4.4 提交并推送 `main`，打 annotated tag `v2.3.1`，创建 GitHub Release 并上传 jar + 校验和；验证方式：`git ls-remote --tags` 可见、release API 返回该 tag 且 asset 可下载
 
 ## Workflow follow-up
 
