@@ -7,9 +7,9 @@ context: |
 
   ## 项目是什么
   Maixr Core —— Minecraft 整合包《Project Negentropy》的核心模组。
-  modid: maixr，版本 2.3.1；Java 21 + ModDevGradle 2.0.146 + NeoForge 21.1.234 + Minecraft 1.21.1。
+  modid: maixr，版本 2.4.0；Java 21 + ModDevGradle 2.0.146 + NeoForge 21.1.234 + Minecraft 1.21.1。
   构建：./gradlew build（需先备好本地 _maven/ 镜像与 libs/ 第三方 jar，见 .gitignore 与 README）。
-  产物：build/libs/MaixrCore-1.21.1-2.3.1.jar。
+  产物：build/libs/MaixrCore-1.21.1-2.4.0.jar。
 
   ## 当前能力（全部已实现；代码在 src/main/java/com/maixr/）
   - 破碎世界类型 maixr:broken（capability: broken-world-type）：
@@ -18,11 +18,12 @@ context: |
     碎裂在 vanilla 密度管线内求值（不覆写 fillFromNoise/buildSurface/applyCarvers，
     旧「虚空区块跳过地形阶段」逻辑已随 v2 重写删除，主 spec 明文 MUST NOT 存在）；
     天空结构 SkyStructurePlacer（1/100 区块、y≥201、dry-run 搬移校验、BIOMES 阶段 maskSkyReferences 屏蔽 Beardifier 地基）；
-    空域浮岩 SkyStoneClusterFeature（y=110~170、1/8 区块、35% 陨石团簇 + 65% 粗矿块，16 种候选按模组过滤）；
+    空域浮岩 SkyStoneClusterFeature（只生成天隙矿脉：origin y=-50~300、4x4 区块单元一道、96~224 格跨区块协作、
+    宿主按 y 分带 深板岩/石头/天空石 15%、矿石矿囊每囊独立抽种并按模组过滤）；
     出生点由 BrokenSpawnSearch 接管（碎裂场掩码预筛 + 真实区块校验，仅新世界；开局空岛系统已移除）；
     碎裂场仅作用于主世界（下界/末地为原版生成，broken_nether/broken_end 已删除）；
     通行与补给：裂缝桥 CrackBridges（生成期常开、纯本区块）+ 碎片道路网 FragmentRoadNetwork
-    （bridgesEnabled 默认关、A* 寻路、SavedData 去重、tick 补建）+ 伴生岛 SurfaceLakes（六型确定性分派）；
+    （bridgesEnabled 默认关、A* 寻路、SavedData 去重、tick 补建）+ 伴生岛 SurfaceLakes（六型确定性分派，全部悬空于 y=250~300，放置前查高空净空）；
     悬空晶洞三层治理（mixin 生成拦截 / 生成期 VoidDebrisCleanup / 加载期 GeodeBlobCleanup，
     geodeCleanupEnabled 默认关）；碎屑子层平滑抖动 Voronoi。
   - 玩偶接入 ME 网络（capability: doll-ae2-network）：

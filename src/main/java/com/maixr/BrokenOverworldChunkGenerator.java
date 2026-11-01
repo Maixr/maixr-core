@@ -149,21 +149,15 @@ public class BrokenOverworldChunkGenerator extends NoiseBasedChunkGenerator {
      * <p>历史教训（v2）：在这里对"虚空区块" return 会连结构一起跳过 ——
      * {@code applyBiomeDecoration} 正是结构真正写方块的地方，跳过它 =
      * 半座村庄从未被放置。</p>
+     *
+     * <p>历史注记：v6.1 之前这里包过一层 catch(RuntimeException)「天空结构越界读
+     * 防线」（防超大 jigsaw 结构越界读炸生成）。v6.2 按需求移除——它把 SkyStone
+     * ClusterFeature 的越界读 bug 吞成"全图不生成"，静默失败比崩溃更难排查；
+     * 异常现在直接炸穿，fail fast。</p>
      */
     @Override
     public void applyBiomeDecoration(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
-        // ★ 兜底防崩：天空结构会把任意模组/原版结构注册到任意区块，个别超大 jigsaw
-        //   结构（piece 跨度超出区块写半径）在模板 processor 阶段读生成区域外的方块
-        //   会抛 IllegalStateException —— 宁可该区块少几座结构，也不让整个世界生成崩掉
-        //   （天空结构入口已用 WRITE_RADIUS_CHUNKS 校验拦截大头，这里是最后防线）
-        try {
-            super.applyBiomeDecoration(level, chunk, structureManager);
-        } catch (RuntimeException e) {
-            // ★ 完整异常栈必须落日志：e.toString() 只有 "Exception generating new chunk" 包装层，
-            //   看不到真实异常源（越界读/结构放置的具体位置），排查天空结构防线漏洞全靠它
-            MaixrMod.LOGGER.warn("[破碎] 区块 ({}, {}) 结构放置异常，已跳过（天空结构越界读防线）",
-                    chunk.getPos().x, chunk.getPos().z, e);
-        }
+        super.applyBiomeDecoration(level, chunk, structureManager);
         // ★ 材质 dressing（design D4）：装饰完成后的链尾确定性逐方块置换
         //   （震中幽匿侵蚀 / 碎屑带天空石结晶；潜声装置禁令见 MaixrDressingPass）
         MaixrDressingPass.run(level, chunk);

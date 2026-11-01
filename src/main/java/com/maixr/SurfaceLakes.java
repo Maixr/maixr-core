@@ -10,7 +10,6 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
@@ -19,6 +18,18 @@ import java.util.Optional;
 
 /**
  * 碎片伴生岛 —— 世界生成阶段、单区块内一次放好（不读邻区块）。
+ *
+ * <p><b>v2：全部搬到高空</b>。旧版贴碎片地表生成（岛面 ≤ y100），玩家在地面
+ * 走就能撞见，没有"悬空岛"的观感。现在基准高度固定在
+ * {@link #ISLAND_MIN_Y}(250) ~ {@link #ISLAND_MAX_Y}(300) 区间内按区块种子抽取，
+ * 岛屿完全悬空。</p>
+ *
+ * <p>放置条件也从"该区域没有地形"改为<b>高空净空</b>：岛屿所占方块盒内必须
+ * 全为空气——这样天然避开已落地的天空结构（`createStructures` 阶段）与
+ * 天隙矿脉（FEATURES 阶段）。净空判定只读本区块。</p>
+ *
+ * <p><b>频率</b>：每 {@link #ISLAND_CHUNK_DENOMINATOR}(4) 个区块约 1 座
+ * （v2 第一版无限量，用户裁定降到原来的 1/4）。</p>
  *
  * <table border="1">
  *   <tr><th>概率</th><th>类型</th><th>内容</th></tr>
@@ -32,8 +43,30 @@ import java.util.Optional;
  */
 public final class SurfaceLakes {
 
-    /** 伴生岛的高度上限：y ≤ 100（玩家反馈高于此玩家登不上）。 */
-    private static final int MAX_SURFACE_Y = 100;
+    /** 伴生岛基准高度的下限（v2：全部悬空，不再贴地表）。 */
+    public static final int ISLAND_MIN_Y = 250;
+    /** 伴生岛基准高度的上限。世界顶部 y=319，留 19 格余量给岛体本身。 */
+    public static final int ISLAND_MAX_Y = 300;
+    /**
+     * 频率门控分母：每 N 个区块约 1 座。
+     *
+     * <p>v2 第一版（无限量）实际密度约每区块 1 座，偏高；用户裁定降到原来的
+     * 1/4，故取 4。门控用区块坐标的确定性哈希，与类型分派
+     * （{@code floorMod(x*7+z*11, 100)}）互相独立——被跳过的区块不改变类型归属。</p>
+     */
+    public static final int ISLAND_CHUNK_DENOMINATOR = 4;
+    /**
+     * 程序生成岛（沙漠/水族馆）的净空盒高度。
+     * 实际最高点：沙漠沙丘 y+3；水族馆球心 y+2r(r=5)=y+10 + 海带最高 y+12。
+     * 取 14 = 再多留 2 格，避免"顶上一格被占"的边界漏判。
+     */
+    private static final int PROGRAM_ISLAND_HEIGHT = 14;
+    /**
+     * 程序岛向下的净空深度：沙漠岛的砂岩底盘写到 {@code y-3}
+     * （逐层收窄），这部分同样要检查净空，否则可能盖掉下方的矿石矿囊。
+     * NBT 模板从 y 起向上，不需要这一段。
+     */
+    private static final int PROGRAM_ISLAND_DEPTH = 4;
     /** 程序生成岛（沙漠/水族馆）的半径。 */
     private static final int R = 4;
 
@@ -48,7 +81,18 @@ public final class SurfaceLakes {
         ChunkPos cp = chunk.getPos();
         int minX = cp.getMinBlockX();
         int minZ = cp.getMinBlockZ();
-        int minY = level.getMinBuildHeight();
+
+        // ★ 频率门控：每 ISLAND_CHUNK_DENOMINATOR 个区块约 1 座。
+        //   用区块坐标的确定性哈希（与下面类型分派的判据互相独立）——
+        //   被跳过的区块不改变自己的类型归属，同种子同坐标结果仍一致。
+        long gateHash = cp.x * 0x9E3779B97F4A7C15L ^ cp.z * 0xC2B2AE3D27D4EB4FL ^ 0x5EEDL;
+        gateHash ^= gateHash >>> 33;
+        gateHash *= 0xFF51AFD7ED558CCDL;
+        gateHash ^= gateHash >>> 33;
+        if (Math.floorMod(gateHash, ISLAND_CHUNK_DENOMINATOR) != 0) {
+            return;
+        }
+
         RandomSource rnd = RandomSource.create(
                 level.getSeed() * 31L + cp.x * 341873128712L + cp.z * 132897987541L + 0x5EEDL);
 
@@ -63,35 +107,47 @@ public final class SurfaceLakes {
         } else if (variant < 78) {
             nbt = "skyblock_nether";
         }
-        int need = (nbt != null) ? 12 : R * 2 + 2;
+        // NBT 岛用 12×12 候选位（模板最大 10×10，留边）；程序岛要覆盖水族馆
+        // 球壳的完整水平跨度：球心 cx±(R+1) = 2R+3 格宽（10 格装不下）。
+        int need = (nbt != null) ? 12 : R * 2 + 3;
+
+        // ★ v2：基准高度不再读邻列地表 —— 250 以上没有地形，高度图恒为顶部值。
+        //   按区块种子在 [ISLAND_MIN_Y, ISLAND_MAX_Y] 内抽一个基准。
+        int baseY = ISLAND_MIN_Y + rnd.nextInt(ISLAND_MAX_Y - ISLAND_MIN_Y + 1);
+
+        // NBT 岛的净空盒高度取模板真实高度；程序岛用固定常量。
+        int clearH = PROGRAM_ISLAND_HEIGHT;
+        int clearDepth = PROGRAM_ISLAND_DEPTH;      // 程序岛底盘向下延伸的格数
+        StructureTemplate template = null;
+        if (nbt != null) {
+            StructureTemplateManager manager = server.getStructureManager();
+            Optional<StructureTemplate> opt = manager.get(ResourceLocation.fromNamespaceAndPath("maixr", nbt));
+            if (opt.isEmpty()) {
+                return;                     // 模板缺失：静默跳过（数据包异常不炸生成）
+            }
+            template = opt.get();
+            clearH = template.getSize().getY();
+            clearDepth = 0;                 // NBT 模板从 y 起向上，不向下占格
+        }
+        // ★ 顶部越界保护：岛体最高点不能超出世界可建高度
+        if (baseY + clearH >= level.getMaxBuildHeight()) {
+            baseY = level.getMaxBuildHeight() - clearH - 1;
+            if (baseY < ISLAND_MIN_Y) {
+                return;
+            }
+        }
 
         for (int oz = 1; oz + need < 16; oz++) {
             for (int ox = 1; ox + need < 16; ox++) {
                 int originX = minX + ox;
                 int originZ = minZ + oz;
-                boolean clear = true;
-                for (int ax = -1; ax <= need && clear; ax++) {
-                    for (int az = -1; az <= need && clear; az++) {
-                        if (chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX + ax, originZ + az) > minY + 1) {
-                            clear = false;
-                        }
-                    }
-                }
-                if (!clear) {
+                // ★ v2：净空 = 岛屿实际占据的方块盒全为空气（避开天空结构/矿脉/地形）
+                if (!isClearVolume(chunk, originX, baseY - clearDepth, originZ,
+                        need, need, clearDepth + clearH)) {
                     continue;
                 }
-                int baseY = -1;
-                for (int az = 1; az < need - 1 && baseY < 0; az++) {
-                    int h = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, originX - 2, originZ + az);
-                    if (h > minY + 1 && h <= MAX_SURFACE_Y) {
-                        baseY = h;
-                    }
-                }
-                if (baseY < 0) {
-                    continue;
-                }
-                if (nbt != null) {
-                    placeNbt(level, server, nbt, originX, baseY, originZ, need);
+                if (template != null) {
+                    placeNbt(level, template, originX, baseY, originZ, need);
                 } else if (variant < 89) {
                     buildDesert(level, originX + need / 2, baseY, originZ + need / 2, rnd);
                 } else {
@@ -102,14 +158,32 @@ public final class SurfaceLakes {
         }
     }
 
-    private static void placeNbt(WorldGenLevel level, ServerLevel server, String name,
-                                 int x, int y, int z, int need) {
-        StructureTemplateManager manager = server.getStructureManager();
-        Optional<StructureTemplate> opt = manager.get(ResourceLocation.fromNamespaceAndPath("maixr", name));
-        if (opt.isEmpty()) {
-            return;
+    /**
+     * 高空净空判定：水平 {@code [x, x+w) × [z, z+d)}、竖直 {@code [y, y+h)}
+     * 的方块盒内必须全为空气。
+     *
+     * <p>只读本区块（调用方保证 {@code x/z} 落在区块内、{@code x+w ≤ 区块右边界}），
+     * 因此不会触发 {@code WorldGenRegion} 的越界读异常。</p>
+     *
+     * <p>v2 换代理由：旧判定用 {@code getHeight(WORLD_SURFACE) > minY + 1} 问
+     * "这些列有没有地形"，在 y≥250 恒为真（上方永远没有地形），所以必须换成
+     * 真正的方块盒检查——它同时兜住了天空结构与天隙矿脉。</p>
+     */
+    private static boolean isClearVolume(ChunkAccess chunk, int x, int y, int z, int w, int d, int h) {
+        for (int lx = x; lx < x + w; lx++) {
+            for (int lz = z; lz < z + d; lz++) {
+                for (int ly = y; ly < y + h; ly++) {
+                    if (!chunk.getBlockState(new BlockPos(lx, ly, lz)).isAir()) {
+                        return false;
+                    }
+                }
+            }
         }
-        StructureTemplate template = opt.get();
+        return true;
+    }
+
+    private static void placeNbt(WorldGenLevel level, StructureTemplate template,
+                                 int x, int y, int z, int need) {
         Vec3i size = template.getSize();
         BlockPos origin = new BlockPos(x + need / 2 - size.getX() / 2, y, z + need / 2 - size.getZ() / 2);
         template.placeInWorld(level, origin, origin, new StructurePlaceSettings(), level.getRandom(), 2);

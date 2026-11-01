@@ -1,24 +1,27 @@
 {
   "_comment": [
-    "空域浮岩 —— 天上飘着的陨石团簇与粗矿块。",
+    "空域浮岩 —— 破碎世界天空中的天隙矿脉。",
     "",
     "★ 只对『破碎』与『空岛』世界类型生效（生成器类型判断，见 SkyStoneClusterFeature）。",
     "",
-    "chance=8 表示每 8 个区块尝试一次（原版 rarity_filter 语义：nextFloat() < 1/chance，",
-    "  即每个区块 1/8 概率）。",
-    "  整体观感需要更密一点才不显空。",
+    "chance=1：本 Feature 每个区块都跑——天隙矿脉为 4x4 区块单元网格",
+    "  （每单元一道、长 96~224 格），各区块协作放置自己可写范围内的片段，",
+    "  稀有度由单元网格决定，不是这里的 rarity_filter。",
     "",
-    "陨石 : 粗矿块 = 65 : 35（见 SkyStoneClusterFeature.METEOR_SHARE；用户调参减少空中矿石）。",
-    "  原来 100% 全是灰色陨石 —— 玩家反馈『陨石块太多、太单调』后加入了粗矿块。",
+    "height_range 与代码常量 VEIN_MIN_Y(-50) / VEIN_MAX_Y(300) 保持一致：",
+    "  它是 placement 阶段决定 origin y 的位置修饰器，而矿脉 origin 的 y",
+    "  实际上由「世界种子 + 单元坐标」在代码里派生（buildVein / veinOrigin），",
+    "  Feature 不使用 ctx.origin().getY() 决定任何形态或宿主——",
+    "  因此本区间只是边界声明，不是有效约束。改代码常量时请同步本文件。",
     "",
-    "高度 110~170：这是破碎世界/空岛世界的『空域』。",
-    "  注意破碎世界现在的地表在 y≈64、山最高 ~104，所以 110 以上确实是纯空中。"
+    "v7：陨石团簇分支已删除，天空石改为高空带的矿脉宿主",
+    "  （origin y >= SKY_STONE_MIN_Y(180) 时按 SKY_STONE_SHARE(0.15) 抽成整脉天空石）。"
   ],
   "feature": "maixr:sky_stone_cluster",
   "placement": [
     {
       "type": "minecraft:rarity_filter",
-      "chance": 16
+      "chance": 1
     },
     {
       "type": "minecraft:in_square"
@@ -28,10 +31,10 @@
       "height": {
         "type": "minecraft:uniform",
         "min_inclusive": {
-          "absolute": 110
+          "absolute": -50
         },
         "max_inclusive": {
-          "absolute": 170
+          "absolute": 300
         }
       }
     },

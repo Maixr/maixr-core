@@ -47,7 +47,7 @@ public class MaixrMod {
     public static final DeferredRegister<Feature<?>> FEATURES =
             DeferredRegister.create(BuiltInRegistries.FEATURE, MODID);
 
-    /** 空域里的陨石碎块：外壳 AE2 陨石方块、内核平滑陨石方块（其余为粗矿块） */
+    /** 空域里的天隙矿脉：宿主 stone/deepslate/ae2:sky_stone_block + 内嵌矿石矿囊 */
     public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> SKY_STONE_CLUSTER =
             FEATURES.register("sky_stone_cluster", () -> new SkyStoneClusterFeature(
                     NoneFeatureConfiguration.CODEC));
